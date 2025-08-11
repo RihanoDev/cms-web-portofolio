@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/pages/articleseditor.tsx","./src/pages/contenteditors.tsx","./src/pages/dashboard.tsx","./src/pages/experienceseditor.tsx","./src/pages/login.tsx","./src/pages/overview.tsx","./src/pages/profileeditor.tsx","./src/pages/projectseditor.tsx","./src/services/api.ts","./src/services/content.ts"],"version":"5.9.2"}
