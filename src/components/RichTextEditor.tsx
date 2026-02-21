@@ -84,7 +84,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       quillRef.current = quill;
       setIsLoaded(true);
     } catch (err) {
-      console.error('Failed to initialize Quill:', err);
+      
       setError('Failed to load editor. Please refresh the page.');
     }
 

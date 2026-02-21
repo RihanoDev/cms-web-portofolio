@@ -142,7 +142,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
 
       onAdd(newImage);
     } catch (error: any) {
-      console.error('Error uploading image:', error);
+      
       setUploadError(error?.message || 'Failed to upload image. Please try again.');
     } finally {
       setUploading(false);

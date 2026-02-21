@@ -10,25 +10,25 @@ interface VideoInputProps {
 
 const getVideoEmbedUrl = (url: string): string | null => {
   if (!url || typeof url !== 'string') {
-    console.error('Invalid video URL:', url);
+    
     return null;
   }
 
   try {
     // Clean up the URL first
     const cleanUrl = url.trim();
-    console.log('Processing video URL:', cleanUrl);
+    
     
     // Handle direct embed URLs - just return as is
     if (cleanUrl.includes('youtube.com/embed/') || cleanUrl.includes('player.vimeo.com/video/')) {
-      console.log('Already an embed URL, returning as is:', cleanUrl);
+      
       return cleanUrl;
     }
     
     // Simple YouTube URL detection with manual ID extraction
     // This is more reliable than regex for many URL formats
     if (cleanUrl.includes('youtube.com/watch') || cleanUrl.includes('youtu.be/')) {
-      console.log('Detected YouTube URL');
+      
       
       let videoId = '';
       
@@ -46,16 +46,16 @@ const getVideoEmbedUrl = (url: string): string | null => {
       }
       
       if (videoId) {
-        console.log('Extracted YouTube video ID:', videoId);
+        
         const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        console.log('Generated YouTube embed URL:', embedUrl);
+        
         return embedUrl;
       }
     }
     
     // Vimeo simple detection
     if (cleanUrl.includes('vimeo.com')) {
-      console.log('Detected Vimeo URL');
+      
       
       // Extract the ID using a simpler approach
       const vimeoId = cleanUrl.split('vimeo.com/')[1];
@@ -63,9 +63,9 @@ const getVideoEmbedUrl = (url: string): string | null => {
         // Clean up the ID by removing anything after ? or # or /
         const cleanId = vimeoId.split(/[?#/]/)[0];
         if (cleanId && /^\d+$/.test(cleanId)) {
-          console.log('Extracted Vimeo ID:', cleanId);
+          
           const embedUrl = `https://player.vimeo.com/video/${cleanId}`;
-          console.log('Generated Vimeo embed URL:', embedUrl);
+          
           return embedUrl;
         }
       }
@@ -76,7 +76,7 @@ const getVideoEmbedUrl = (url: string): string | null => {
     const directUrlMatch = cleanUrl.match(/src=["'](.+?)["']/i);
     if (directUrlMatch && directUrlMatch[1]) {
       const extractedUrl = directUrlMatch[1];
-      console.log('Extracted direct URL from input:', extractedUrl);
+      
       
       // Verify it's a valid embed URL
       if (extractedUrl.includes('youtube.com/embed/') || extractedUrl.includes('player.vimeo.com/video/')) {
@@ -84,10 +84,10 @@ const getVideoEmbedUrl = (url: string): string | null => {
       }
     }
     
-    console.warn('No supported video URL pattern matched for:', cleanUrl);
+    
     return null;
   } catch (error) {
-    console.error('Error processing video URL:', error);
+    
     return null;
   }
 };
@@ -133,18 +133,18 @@ const VideoInput: React.FC<VideoInputProps> = ({
       }
       return null;
     } catch (err) {
-      console.error('Error extracting YouTube ID:', err);
+      
       return null;
     }
   };
   
   const handleGenerate = () => {
-    console.log('Generating preview for input:', inputValue);
+    
     setError(null);
     
     // Try standard processing first
     const embedUrl = getVideoEmbedUrl(inputValue);
-    console.log('Generated embed URL:', embedUrl);
+    
     
     if (embedUrl) {
       setPreviewUrl(embedUrl);
@@ -156,20 +156,20 @@ const VideoInput: React.FC<VideoInputProps> = ({
     // If standard processing fails, try a more direct approach for YouTube
     if (inputValue.includes('youtube.com/watch?v=') || inputValue.includes('youtu.be/')) {
       try {
-        console.log('Trying fallback YouTube URL processing');
+        
         const videoId = extractYouTubeVideoId(inputValue);
-        console.log('Extracted YouTube ID:', videoId);
+        
         
         if (videoId) {
           const fallbackEmbedUrl = `https://www.youtube.com/embed/${videoId}`;
-          console.log('Fallback YouTube embed URL:', fallbackEmbedUrl);
+          
           setPreviewUrl(fallbackEmbedUrl);
           onChange(inputValue);
           if (onSubmit) onSubmit();
           return;
         }
       } catch (err) {
-        console.error('Fallback YouTube processing failed:', err);
+        
         setError('Could not extract video ID from YouTube URL');
       }
     }
@@ -283,7 +283,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   onRemove,
   onCaptionChange,
 }) => {
-  console.log('VideoPreview rendering with URL:', url);
+  
   
   // Use state for managing UI
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
@@ -304,7 +304,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       }
       return null;
     } catch (err) {
-      console.error('Error extracting YouTube ID:', err);
+      
       return null;
     }
   };
@@ -318,7 +318,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       if (result) {
         setEmbedUrl(result);
         setError(null);
-        console.log('Generated embed URL:', result);
+        
         return;
       }
       
@@ -329,7 +329,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           const youtubeEmbedUrl = `https://www.youtube.com/embed/${videoId}`;
           setEmbedUrl(youtubeEmbedUrl);
           setError(null);
-          console.log('Used fallback YouTube embed URL generation:', youtubeEmbedUrl);
+          
           return;
         }
       }
@@ -338,7 +338,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       setError('Could not generate embed URL from the provided video link');
       setEmbedUrl(null);
     } catch (err) {
-      console.error('Error processing video URL:', err);
+      
       setError('Error processing video URL');
       setEmbedUrl(null);
     }

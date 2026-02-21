@@ -15,27 +15,49 @@ axiosInstance.interceptors.request.use(
     if (token) {
       const cleanToken = token.trim().replace(/^["']|["']$/g, "");
       config.headers.Authorization = `Bearer ${cleanToken}`;
-      console.log(`Adding auth header (token length: ${cleanToken.length})`);
+      
     }
     return config;
   },
   (error) => {
-    console.error("Request interceptor error:", error);
+    
     return Promise.reject(error);
   },
 );
 
-// Response interceptor for handling common errors
+function decodeBase64Utf8(base64: string): string {
+  try {
+    const binaryString = window.atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
+  } catch (e) {
+    return base64; // Fallback to raw string if not valid base64
+  }
+}
+
+// Response interceptor for handling common errors and response decoding
 axiosInstance.interceptors.response.use(
   (response) => {
+    // Decode if backend sends encoded payload
+    if (response.headers["x-encoded-response"] === "true" && typeof response.data === "string") {
+      try {
+        const decoded = decodeBase64Utf8(response.data);
+        response.data = JSON.parse(decoded);
+      } catch (e) {
+        // failed to decode, keep raw or handle error
+      }
+    }
     return response;
   },
   (error) => {
-    console.error("Response error:", error);
+    
 
     // Handle auth errors globally
     if (error.response && error.response.status === 401) {
-      console.error("Authentication error - token may be invalid");
+      
       // We could redirect to login page here if needed
       // window.location.href = '/login';
     }
@@ -46,14 +68,14 @@ axiosInstance.interceptors.response.use(
 
 export const api = {
   async get(path: string, config?: AxiosRequestConfig) {
-    console.log(`API GET request to: ${path}`);
+    
     try {
       const response: AxiosResponse = await axiosInstance.get(path, config);
-      console.log(`API GET response from ${path}:`, response.status);
-      console.log(`API GET data from ${path}:`, response.data);
+      
+      
       return response;
     } catch (error: any) {
-      console.error(`API GET ${path} error:`, error);
+      
 
       // Return more detailed error info
       const errorData = error.response?.data || {};
@@ -66,14 +88,14 @@ export const api = {
   },
 
   async post(path: string, body?: any, config?: AxiosRequestConfig) {
-    console.log(`API POST request to: ${path}`, body);
+    
     try {
       const response: AxiosResponse = await axiosInstance.post(path, body, config);
-      console.log(`API POST response from ${path}:`, response.status);
-      console.log(`API POST data from ${path}:`, response.data);
+      
+      
       return response;
     } catch (error: any) {
-      console.error(`API POST ${path} error:`, error);
+      
 
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
@@ -85,14 +107,14 @@ export const api = {
   },
 
   async put(path: string, body?: any, config?: AxiosRequestConfig) {
-    console.log(`API PUT request to: ${path}`, body);
+    
     try {
       const response: AxiosResponse = await axiosInstance.put(path, body, config);
-      console.log(`API PUT response from ${path}:`, response.status);
-      console.log(`API PUT data from ${path}:`, response.data);
+      
+      
       return response;
     } catch (error: any) {
-      console.error(`API PUT ${path} error:`, error);
+      
 
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
@@ -112,13 +134,13 @@ export const api = {
   },
 
   async delete(path: string, config?: AxiosRequestConfig) {
-    console.log(`API DELETE request to: ${path}`);
+    
     try {
       const response: AxiosResponse = await axiosInstance.delete(path, config);
-      console.log(`API DELETE response from ${path}:`, response.status);
+      
       return response;
     } catch (error: any) {
-      console.error(`API DELETE ${path} error:`, error);
+      
 
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
@@ -130,7 +152,7 @@ export const api = {
   },
 
   async upload(path: string, formData: FormData, config?: AxiosRequestConfig) {
-    console.log(`API UPLOAD request to: ${path}`);
+    
     try {
       const uploadConfig = {
         ...config,
@@ -141,11 +163,11 @@ export const api = {
       };
 
       const response: AxiosResponse = await axiosInstance.post(path, formData, uploadConfig);
-      console.log(`API UPLOAD response from ${path}:`, response.status);
-      console.log(`API UPLOAD data from ${path}:`, response.data);
+      
+      
       return response;
     } catch (error: any) {
-      console.error(`API UPLOAD ${path} error:`, error);
+      
 
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;

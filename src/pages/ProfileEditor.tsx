@@ -112,7 +112,7 @@ export default function ProfileEditor() {
         setPhone(p.phone || '')
         setAvailableTags(tags.map(t => t.name))
       } catch (err) {
-        console.error("Error loading data:", err)
+        
       }
     }
     fetchData()
@@ -137,7 +137,7 @@ export default function ProfileEditor() {
       const result = await uploadMedia(file, "profiles")
       setPreview(result.fileUrl)
     } catch (err) {
-      console.error("Error processing image:", err)
+      
       alert("Failed to upload image. Please try again.")
     } finally {
       setSaving(false)
@@ -161,7 +161,7 @@ export default function ProfileEditor() {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
-      console.error("Error saving profile:", err)
+      
       alert("Failed to save profile. Please try again.")
     } finally {
       setSaving(false)

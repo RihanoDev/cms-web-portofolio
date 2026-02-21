@@ -33,7 +33,7 @@ const ViewTracker: React.FC<ViewTrackerProps> = ({
             referrer: document.referrer,
           });
         } catch (err) {
-          console.error('Failed to track view:', err);
+          
           // Don't show error to user for tracking failures
         }
       };
@@ -53,7 +53,7 @@ const ViewTracker: React.FC<ViewTrackerProps> = ({
           const count = await getContentViews(contentId, contentType);
           setViewCount(count);
         } catch (err) {
-          console.error('Failed to fetch view count:', err);
+          
           setError('Failed to load view count');
         } finally {
           setIsLoading(false);

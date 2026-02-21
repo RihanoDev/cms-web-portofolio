@@ -21,14 +21,14 @@ const CategoriesManager: React.FC = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      console.log("Fetching categories...");
+      
       const response = await api.get("/categories");
-      console.log("Categories response:", response);
+      
 
       // Check if the data has the expected structure
       const responseData = response.data;
       if (!responseData) {
-        console.error("Invalid response format:", response);
+        
         setError("Invalid response format from server");
         return;
       }
@@ -40,12 +40,12 @@ const CategoriesManager: React.FC = () => {
       } else if (Array.isArray(responseData)) {
         categoriesData = responseData;
       } else {
-        console.error("Unexpected data structure:", responseData);
+        
         setError("Unexpected data structure in response");
         return;
       }
 
-      console.log("Parsed categories data:", categoriesData);
+      
 
       // Ensure all categories have the necessary properties for ExtendedCategory
       const extendedCategories = categoriesData.map((cat: any) => ({
@@ -54,11 +54,11 @@ const CategoriesManager: React.FC = () => {
         updatedAt: cat.updatedAt || cat.updated_at || new Date().toISOString(),
       }));
 
-      console.log("Extended categories:", extendedCategories);
+      
       setCategories(extendedCategories);
       setError(null);
     } catch (err: any) {
-      console.error("Error fetching categories:", err);
+      
       setError(`Failed to load categories: ${err.message || "Unknown error"}`);
     } finally {
       setLoading(false);
@@ -82,7 +82,7 @@ const CategoriesManager: React.FC = () => {
       await fetchCategories();
       setError(null);
     } catch (err) {
-      console.error("Error creating category:", err);
+      
       setError("Failed to create category. Please try again.");
     } finally {
       setLoading(false);
@@ -102,7 +102,7 @@ const CategoriesManager: React.FC = () => {
       await fetchCategories();
       setError(null);
     } catch (err) {
-      console.error("Error updating category:", err);
+      
       setError("Failed to update category. Please try again.");
     } finally {
       setLoading(false);
@@ -120,7 +120,7 @@ const CategoriesManager: React.FC = () => {
       await fetchCategories();
       setError(null);
     } catch (err) {
-      console.error("Error deleting category:", err);
+      
       setError("Failed to delete category. Please try again.");
     } finally {
       setLoading(false);

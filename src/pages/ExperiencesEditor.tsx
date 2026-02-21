@@ -98,12 +98,12 @@ export default function ExperiencesEditor() {
   useEffect(() => {
     const loadExperiences = async () => {
       try {
-        console.log("Loading experiences from API...");
+        
         const apiExperiences = await getExperiences();
-        console.log("Loaded experiences:", apiExperiences);
+        
         setExperiences(apiExperiences as unknown as Experience[]);
       } catch (error) {
-        console.error("Error loading experiences:", error);
+        
         setExperiences([]);
       }
     };
@@ -157,7 +157,7 @@ export default function ExperiencesEditor() {
       try {
         await apiDeleteExperience(experience.id);
       } catch (err: any) {
-        console.error("Failed to delete experience:", err);
+        
         setError("Failed to delete experience. Please try again.");
         setIsDeleting(false);
         setDeleteModalOpen(false);
@@ -218,7 +218,7 @@ export default function ExperiencesEditor() {
       setSavedIndex(index);
       setTimeout(() => setSavedIndex(null), 3000);
     } catch (err: any) {
-      console.error('Error saving experience:', err);
+      
       alert(`Gagal menyimpan "${experience.title || experience.company}": ${err?.message || 'Unknown error'}`);
     } finally {
       setSavingIndex(null);
@@ -247,12 +247,12 @@ export default function ExperiencesEditor() {
       }
 
       // Call API to save experiences
-      console.log("Saving experiences:", experiences);
+      
       await saveExperiences(experiences as any);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error: any) {
-      console.error("Error saving experiences:", error);
+      
       alert(`Failed to save experiences: ${error?.message || 'Unknown error'}`);
     } finally {
       setSaving(false);

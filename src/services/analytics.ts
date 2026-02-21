@@ -17,12 +17,12 @@ interface TrackViewParams {
  */
 export const trackContentView = async (params: TrackViewParams): Promise<boolean> => {
   try {
-    console.log('Tracking content view:', params);
+    
     await api.post('/views/track', params);
-    console.log('View tracked successfully');
+    
     return true;
   } catch (error) {
-    console.error('Failed to track content view:', error);
+    
     return false;
   }
 };
@@ -35,12 +35,12 @@ export const getContentViews = async (
   contentType: ContentType
 ): Promise<number> => {
   try {
-    console.log(`Fetching view count for ${contentType} with ID ${contentId}`);
+    
     const response = await api.get(`/views/count?contentId=${contentId}&contentType=${contentType}`);
-    console.log('View count response:', response.data);
+    
     return response.data.data?.count || 0;
   } catch (error) {
-    console.error('Failed to get content views:', error);
+    
     return 0;
   }
 };
@@ -59,7 +59,7 @@ export const getViewsAnalytics = async (
     const response = await api.get(url);
     return response.data.data || [];
   } catch (error) {
-    console.error('Failed to get views analytics:', error);
+    
     return [];
   }
 };

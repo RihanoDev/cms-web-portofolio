@@ -78,7 +78,7 @@ export default function Overview() {
           experiences: exps.length
         });
       } catch (e) {
-        console.error(e);
+        
       } finally {
         setLoading(false);
       }
