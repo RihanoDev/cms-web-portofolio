@@ -5,7 +5,7 @@ import { API_BASE_URL } from "./config";
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000, // 15 seconds timeout
-  withCredentials: true, // Include cookies
+  withCredentials: true, // Include credentials for CORS with auth
 });
 
 // Request interceptor for adding auth header
