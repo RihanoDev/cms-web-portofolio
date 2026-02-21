@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/quill": "^2.0.14",
     "@types/uuid": "^10.0.0",
     "axios": "^1.11.0",
+    "quill": "^2.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-quill": "^2.0.0",
     "react-router-dom": "^6.28.0",
     "uuid": "^11.1.0"
   },
