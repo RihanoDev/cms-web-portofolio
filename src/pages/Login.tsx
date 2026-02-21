@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '@/services/api'
+import axios from 'axios'
 
 export default function Login(){
   const nav = useNavigate()
@@ -13,12 +13,74 @@ export default function Login(){
     e.preventDefault()
     setLoading(true); setError(null)
     try{
-      const res = await api.post('/api/v1/auth/login', { email, password })
-      const token = res?.data?.data?.token || res?.data?.token
-      if(!token) throw new Error('Token missing')
-      localStorage.setItem('cms_token', token)
+      console.log('Attempting login with:', { email })
+      
+      // Using axios for API call
+      const response = await axios.post('/api/v1/auth/login', 
+        { email, password },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log('Login response status:', response.status)
+      
+      const data = response.data
+      console.log('Login response data:', data)
+      
+      // Extract token from response
+      let token = null;
+      
+      // Enhanced token extraction with detailed logging
+      console.log('Response data structure:', JSON.stringify(data, null, 2));
+      
+      try {
+        // Check standard location first
+        if (data?.data?.token) {
+          token = data.data.token;
+          console.log('Found token in data.data.token');
+        } 
+        // Try other possible locations
+        else if (data?.token) {
+          token = data.token;
+          console.log('Found token in data.token');
+        } 
+        // Check if data itself is the token (string)
+        else if (typeof data.data === 'string') {
+          token = data.data;
+          console.log('Using data.data string as token');
+        }
+        
+        console.log('Found token in response:', !!token);
+        
+        if(!token) throw new Error('Token missing in server response');
+        
+        // Clean the token - remove quotes and whitespace
+        if (typeof token === 'string') {
+          token = token.trim().replace(/(^["']|["']$)/g, '');
+          console.log('Cleaned token length:', token.length);
+        }
+      } catch (tokenError) {
+        console.error('Error extracting token:', tokenError);
+        throw new Error('Could not extract authentication token from response');
+      }
+      
+      // Store token with console logs for debugging
+      console.log(`Storing token in localStorage (length: ${token.length}, preview: ${token.substring(0, 10)}...)`);
+      localStorage.setItem('cms_token', token);
+      
+      // Verify token was stored
+      const storedToken = localStorage.getItem('cms_token');
+      console.log(`Stored token verified (length: ${storedToken?.length || 0})`);
+      
+      // Clear any old auth-related storage that might be causing conflicts
+      sessionStorage.removeItem('cms_token');
+      
       nav('/dashboard')
     }catch(err:any){
+      console.error('Login error:', err)
       setError(err?.message || 'Login failed')
     }finally{ setLoading(false) }
   }

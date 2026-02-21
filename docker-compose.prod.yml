@@ -3,5 +3,5 @@ services:
     image: ghcr.io/rihanodev/cms-web-portofolio:latest
     container_name: cms-web-porto
     ports:
-      - "8082:80"
+      - "1600:80"
     restart: unless-stopped

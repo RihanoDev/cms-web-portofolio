@@ -9,14 +9,16 @@ import ProfileEditor from './pages/ProfileEditor'
 import ProjectsEditor from './pages/ProjectsEditor'
 import ArticlesEditor from './pages/ArticlesEditor'
 import ExperiencesEditor from './pages/ExperiencesEditor'
+import ContentEditors from './pages/ContentEditors'
 import './index.css'
 
 const router = createBrowserRouter([
   { path: '/', element: <App />, children: [
-    { index: true, element: <Login /> },
+    { path: 'login', index: true, element: <Login /> },
     { path: 'dashboard', element: <Dashboard />, children: [
       { index: true, element: <Overview /> },
       { path: 'profile', element: <ProfileEditor /> },
+      { path: 'content-editors', element: <ContentEditors /> },
       { path: 'projects', element: <ProjectsEditor /> },
       { path: 'articles', element: <ArticlesEditor /> },
       { path: 'experiences', element: <ExperiencesEditor /> },
