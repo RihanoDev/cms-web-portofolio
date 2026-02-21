@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/config';
 
 interface ApiResponse {
   id: number;
@@ -9,7 +10,6 @@ interface ApiResponse {
   metadata: Record<string, any>;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 export const DataAnalysis: React.FC = () => {
   const [sampleData, setSampleData] = useState<ApiResponse | null>(null);
@@ -24,7 +24,7 @@ export const DataAnalysis: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/${contentType}?limit=1`);
       if (!response.ok) throw new Error('Failed to fetch data');
-      
+
       const data = await response.json();
       if (data.items && data.items.length > 0) {
         setSampleData(data.items[0]);
@@ -122,11 +122,10 @@ export const DataAnalysis: React.FC = () => {
           <button
             key={type}
             onClick={() => setSelectedContent(type)}
-            className={`px-4 py-2 rounded-md font-medium capitalize ${
-              selectedContent === type
+            className={`px-4 py-2 rounded-md font-medium capitalize ${selectedContent === type
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+              }`}
           >
             {type}
           </button>
@@ -141,7 +140,7 @@ export const DataAnalysis: React.FC = () => {
             <div className="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
             <h3 className="text-xl font-semibold text-gray-900">Relational Data</h3>
           </div>
-          
+
           <div className="space-y-4">
             <div className="bg-green-50 p-4 rounded-lg">
               <h4 className="font-medium text-green-800 mb-2">🏷️ Categories (Many-to-Many)</h4>
@@ -151,8 +150,8 @@ export const DataAnalysis: React.FC = () => {
               <div className="space-y-2">
                 {sampleData.categories.map((cat) => (
                   <div key={cat.id} className="bg-white p-2 rounded border border-green-200">
-                    <span className="font-medium">ID: {cat.id}</span> | 
-                    <span className="ml-1">Name: {cat.name}</span> | 
+                    <span className="font-medium">ID: {cat.id}</span> |
+                    <span className="ml-1">Name: {cat.name}</span> |
                     <span className="ml-1">Slug: {cat.slug}</span>
                   </div>
                 ))}
@@ -167,8 +166,8 @@ export const DataAnalysis: React.FC = () => {
               <div className="space-y-2">
                 {sampleData.tags.map((tag) => (
                   <div key={tag.id} className="bg-white p-2 rounded border border-green-200">
-                    <span className="font-medium">ID: {tag.id}</span> | 
-                    <span className="ml-1">Name: {tag.name}</span> | 
+                    <span className="font-medium">ID: {tag.id}</span> |
+                    <span className="ml-1">Name: {tag.name}</span> |
                     <span className="ml-1">Slug: {tag.slug}</span>
                   </div>
                 ))}
@@ -193,7 +192,7 @@ export const DataAnalysis: React.FC = () => {
             <div className="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
             <h3 className="text-xl font-semibold text-gray-900">JSON Metadata</h3>
           </div>
-          
+
           <div className="space-y-4">
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="font-medium text-blue-800 mb-2">📊 Flexible Fields</h4>
