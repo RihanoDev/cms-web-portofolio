@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import RichTextEditor from './RichTextEditor';
+import { api } from '../services/api';
+import { API_BASE_URL } from '../services/config';
 
 interface Tag {
   id: number;
@@ -73,14 +76,14 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
     const loadData = async () => {
       try {
         // Fetch categories
-        const categoriesResponse = await fetch('/api/v1/categories');
+        const categoriesResponse = await fetch(`${API_BASE_URL}/categories`);
         if (categoriesResponse.ok) {
           const categoriesData = await categoriesResponse.json();
           setAvailableCategories(categoriesData.data?.data || categoriesData.data || []);
         }
 
         // Fetch tags
-        const tagsResponse = await fetch('/api/v1/tags');
+        const tagsResponse = await fetch(`${API_BASE_URL}/tags`);
         if (tagsResponse.ok) {
           const tagsData = await tagsResponse.json();
           setAvailableTags(tagsData.data?.data || tagsData.data || []);
@@ -112,9 +115,9 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
     if (newImageUrl.trim()) {
       setFormData(prev => ({
         ...prev,
-        images: [...prev.images, { 
+        images: [...prev.images, {
           url: newImageUrl.trim(),
-          sortOrder: prev.images.length 
+          sortOrder: prev.images.length
         }]
       }));
       setNewImageUrl('');
@@ -125,9 +128,9 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
     if (newVideoUrl.trim()) {
       setFormData(prev => ({
         ...prev,
-        videos: [...prev.videos, { 
+        videos: [...prev.videos, {
           url: newVideoUrl.trim(),
-          sortOrder: prev.videos.length 
+          sortOrder: prev.videos.length
         }]
       }));
       setNewVideoUrl('');
@@ -224,7 +227,7 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
           <h3 className="text-lg font-medium text-green-800 mb-4">
             📊 Relational Data (Indexed & Searchable)
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Categories */}
             <div>
@@ -297,9 +300,9 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
             </label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                status: e.target.value as 'draft' | 'published' | 'private' 
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                status: e.target.value as 'draft' | 'published' | 'private'
               }))}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -315,7 +318,7 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
           <h3 className="text-lg font-medium text-purple-800 mb-4">
             🎨 Media Files
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Images */}
             <div>

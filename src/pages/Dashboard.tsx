@@ -39,20 +39,19 @@ const LogoutIcon = () => (
   </svg>
 )
 
-export default function Dashboard(){
+export default function Dashboard() {
   const nav = useNavigate()
   const location = useLocation()
-  const [profile, setProfile] = React.useState(ContentStore.getProfile())
+  const [profile, setProfile] = React.useState<any>({})
   const [isCollapsed, setIsCollapsed] = React.useState(false)
-  
+
   React.useEffect(() => {
     const token = localStorage.getItem('cms_token')
-    if(!token){ nav('/') ; return }
+    if (!token) { nav('/'); return }
 
     // Get profile
-    const p = ContentStore.getProfile()
-    setProfile(p)
-  },[])
+    ContentStore.getProfile().then(p => setProfile(p))
+  }, [])
 
   const logout = () => {
     localStorage.removeItem('cms_token')
@@ -62,7 +61,7 @@ export default function Dashboard(){
   // Get page title based on current location
   const getPageTitle = () => {
     const path = location.pathname.split('/').pop() || ''
-    switch(path) {
+    switch (path) {
       case 'profile': return 'Profile'
       case 'projects': return 'Projects'
       case 'articles': return 'Articles'
@@ -71,10 +70,10 @@ export default function Dashboard(){
     }
   }
 
-  const linkCls = ({ isActive }: {isActive: boolean}) => `
+  const linkCls = ({ isActive }: { isActive: boolean }) => `
     flex items-center gap-3 px-4 py-3 rounded-lg transition-all
-    ${isActive 
-      ? 'bg-blue-600 text-white font-medium shadow-md' 
+    ${isActive
+      ? 'bg-blue-600 text-white font-medium shadow-md'
       : 'text-slate-300 hover:bg-slate-700/60 hover:text-white'}
   `
 
@@ -84,15 +83,15 @@ export default function Dashboard(){
       <aside className={`fixed inset-y-0 left-0 z-50 bg-slate-800 shadow-xl transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} lg:translate-x-0`}>
         <div className="p-4 flex items-center justify-between h-20 border-b border-slate-700">
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo-navbar.png" 
-              alt="Logo" 
+            <img
+              src="/logo-navbar.png"
+              alt="Logo"
               className="w-10 h-10 rounded-lg shadow-md"
             />
             {!isCollapsed && <h1 className="text-xl font-bold text-white m-0">Rihano CMS</h1>}
           </div>
-          <button 
-            onClick={() => setIsCollapsed(!isCollapsed)} 
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
             className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-700"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,14 +99,14 @@ export default function Dashboard(){
             </svg>
           </button>
         </div>
-        
+
         <div className="p-4">
           {/* Profile Section */}
           <div className="mb-6 flex flex-col items-center justify-center">
             <div className="relative group">
-              <img 
-                src={profile.avatarDataUrl || '/profile.jpg'} 
-                alt="Profile" 
+              <img
+                src={profile.avatarDataUrl || '/profile.jpg'}
+                alt="Profile"
                 className="w-16 h-16 rounded-full object-cover border-2 border-blue-500 shadow-md"
               />
             </div>
@@ -118,7 +117,7 @@ export default function Dashboard(){
               </div>
             )}
           </div>
-          
+
           {/* Navigation */}
           <nav className="space-y-2">
             {!isCollapsed && <div className="text-xs uppercase text-slate-400 mb-3 px-4">Dashboard</div>}
@@ -126,7 +125,7 @@ export default function Dashboard(){
               <HomeIcon />
               {!isCollapsed && <span>Overview</span>}
             </NavLink>
-            
+
             {!isCollapsed && <div className="text-xs uppercase text-slate-400 mb-2 mt-6 px-4">Content</div>}
             <NavLink to="profile" className={linkCls}>
               <UserIcon />
@@ -152,11 +151,11 @@ export default function Dashboard(){
             </NavLink>
           </nav>
         </div>
-        
+
         {/* Logout at bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
-          <button 
-            onClick={logout} 
+          <button
+            onClick={logout}
             className="flex items-center justify-center gap-3 w-full px-4 py-3 text-white bg-red-500 hover:bg-red-600 transition-colors rounded-lg shadow-md"
           >
             <LogoutIcon />
@@ -164,7 +163,7 @@ export default function Dashboard(){
           </button>
         </div>
       </aside>
-      
+
       {/* Main content */}
       <div className={`transition-all duration-300 ${isCollapsed ? 'ml-20' : 'ml-64'}`}>
         <header className="bg-slate-800/80 backdrop-blur-sm sticky top-0 z-40 h-20 flex items-center justify-between px-8 shadow-md">
