@@ -1,5 +1,6 @@
 import React from "react";
 import { api } from "../services/api";
+import { getProjects, getArticles, getExperiences } from "../services/content";
 import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, TimeScale, Filler } from "chart.js";
 
@@ -50,16 +51,32 @@ export default function Overview() {
   const [overall, setOverall] = React.useState<Stats | null>(null);
   const [home, setHome] = React.useState<Stats | null>(null);
   const [series, setSeries] = React.useState<{ bucket: string; count: number }[]>([]);
+  const [topPages, setTopPages] = React.useState<{ page: string; count: number }[]>([]);
+  const [counts, setCounts] = React.useState({ projects: 0, articles: 0, experiences: 0 });
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const [ovr, hm, ts] = await Promise.all([api.get("/analytics/views"), api.get("/analytics/views?page=/"), api.get("/analytics/series?interval=day")]);
+        const [ovr, hm, ts, projs, arts, exps, top] = await Promise.all([
+          api.get("/analytics/views"),
+          api.get("/analytics/views?page=/"),
+          api.get("/analytics/series?interval=day"),
+          getProjects(),
+          getArticles(),
+          getExperiences(),
+          api.get("/analytics/top-pages?limit=5")
+        ]);
         setOverall(ovr.data?.data || ovr.data);
         setHome(hm.data?.data || hm.data);
         setSeries((ts.data?.data || ts.data || []).slice(-30));
+        setTopPages(top.data?.data || top.data || []);
+        setCounts({
+          projects: projs.length,
+          articles: arts.length,
+          experiences: exps.length
+        });
       } catch (e) {
         console.error(e);
       } finally {
@@ -151,6 +168,41 @@ export default function Overview() {
 
   return (
     <div>
+      <Section title="Content Summary">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StatCard
+            title="Total Projects"
+            value={counts.projects}
+            subtitle="Published & Draft projects"
+            icon={
+              <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            }
+          />
+          <StatCard
+            title="Total Articles"
+            value={counts.articles}
+            subtitle="Blog posts & updates"
+            icon={
+              <svg className="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+              </svg>
+            }
+          />
+          <StatCard
+            title="Work Experiences"
+            value={counts.experiences}
+            subtitle="Career history entries"
+            icon={
+              <svg className="w-6 h-6 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            }
+          />
+        </div>
+      </Section>
+
       <Section title="Analytics Overview">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
@@ -221,39 +273,24 @@ export default function Overview() {
             <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700/50 h-full">
               <h3 className="text-white font-medium mb-4">Top Pages</h3>
 
-              {/* Sample top pages data - replace with real data */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-700">
-                  <div>
-                    <div className="font-medium text-slate-100">Home</div>
-                    <div className="text-xs text-slate-400">/{home?.total ? "" : ""}</div>
+                {topPages.length > 0 ? (
+                  topPages.map((page, i) => (
+                    <div key={i} className={`flex items-center justify-between ${i < topPages.length - 1 ? 'pb-2 border-b border-slate-700' : ''}`}>
+                      <div>
+                        <div className="font-medium text-slate-100 capitalize">
+                          {page.page === '/' ? 'Home' : page.page.replace(/^\/|\/$/g, '').replace(/-/g, ' ')}
+                        </div>
+                        <div className="text-xs text-slate-400">{page.page}</div>
+                      </div>
+                      <div className="text-slate-200 font-semibold">{page.count} views</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400 text-sm">No page views tracked yet</p>
                   </div>
-                  <div className="text-slate-200 font-semibold">{home?.total || 0}</div>
-                </div>
-
-                <div className="flex items-center justify-between pb-2 border-b border-slate-700">
-                  <div>
-                    <div className="font-medium text-slate-100">About</div>
-                    <div className="text-xs text-slate-400">/about</div>
-                  </div>
-                  <div className="text-slate-200 font-semibold">{Math.floor((home?.total || 0) * 0.7)}</div>
-                </div>
-
-                <div className="flex items-center justify-between pb-2 border-b border-slate-700">
-                  <div>
-                    <div className="font-medium text-slate-100">Projects</div>
-                    <div className="text-xs text-slate-400">/projects</div>
-                  </div>
-                  <div className="text-slate-200 font-semibold">{Math.floor((home?.total || 0) * 0.5)}</div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-slate-100">Contact</div>
-                    <div className="text-xs text-slate-400">/contact</div>
-                  </div>
-                  <div className="text-slate-200 font-semibold">{Math.floor((home?.total || 0) * 0.3)}</div>
-                </div>
+                )}
               </div>
             </div>
           </div>

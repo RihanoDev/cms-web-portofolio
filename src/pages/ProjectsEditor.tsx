@@ -9,6 +9,7 @@ import UuidGenerator from '../components/UuidGenerator';
 import TechnologySelector from '../components/TechnologySelector';
 import MetadataViewer from '../components/MetadataViewer';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import LangToggle, { getTranslation, setTranslation } from '../components/LangToggle';
 // Card component for consistent UI
 const Card = ({ title, children }: { title?: string, children: React.ReactNode }) => (
   <div className="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700/50">
@@ -37,6 +38,7 @@ export default function ProjectsEditor() {
     'Redis', 'GraphQL', 'REST API', 'Serverless', 'Firebase'
   ]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [activeLang, setActiveLang] = useState<'en' | 'id'>('en');
   const [saving, setSaving] = useState(false);
   const [savingIndex, setSavingIndex] = useState<number | null>(null); // per-project save
   const [savedIndex, setSavedIndex] = useState<number | null>(null);   // per-project success flash
@@ -453,7 +455,8 @@ export default function ProjectsEditor() {
               </div>
             )}
 
-            {filteredProjects.map((project, index) => {
+            {filteredProjects.map((project) => {
+              const index = projectsArray.findIndex(p => p.id === project.id);
               const isEditing = editingIndex === index;
 
               return (
@@ -468,13 +471,23 @@ export default function ProjectsEditor() {
                     {/* Project header with title and actions */}
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
-                        <input
-                          id={`project-title-${index}`}
-                          className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white text-lg font-medium placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
-                          placeholder="Project Title"
-                          value={project.title || ''}
-                          onChange={e => handleTitleChange(index, e.target.value)}
-                        />
+                        {activeLang === 'en' ? (
+                          <input
+                            id={`project-title-${index}`}
+                            className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white text-lg font-medium placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                            placeholder="Project Title (EN)"
+                            value={project.title || ''}
+                            onChange={e => handleTitleChange(index, e.target.value)}
+                          />
+                        ) : (
+                          <input
+                            id={`project-title-id-${index}`}
+                            className="w-full bg-slate-700/50 border border-blue-500/50 rounded-lg px-4 py-2 text-white text-lg font-medium placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                            placeholder="Judul Proyek (ID)"
+                            value={getTranslation(project.metadata, 'id', 'title', '')}
+                            onChange={e => updateProjectField(index, 'metadata', setTranslation(project.metadata, 'id', 'title', e.target.value))}
+                          />
+                        )}
                       </div>
                       <div className="flex items-center ml-4 space-x-2">
                         <button
@@ -583,6 +596,8 @@ export default function ProjectsEditor() {
                     {/* Detailed editor when expanded */}
                     {isEditing && (
                       <div className="mt-5 space-y-6">
+                        {/* Language Toggle */}
+                        <LangToggle activeLang={activeLang} onChange={setActiveLang} />
                         {/* UUID Generator */}
                         <div>
                           <label htmlFor={`project-uuid-${index}`} className="block text-xs font-medium text-slate-400 mb-2">
@@ -688,15 +703,25 @@ export default function ProjectsEditor() {
                         {/* Short Description */}
                         <div>
                           <label htmlFor={`project-description-${index}`} className="block text-xs font-medium text-slate-400 mb-2">
-                            Short Description
+                            Short Description {activeLang === 'id' && <span className="text-blue-400">(ID)</span>}
                           </label>
-                          <textarea
-                            id={`project-description-${index}`}
-                            className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
-                            placeholder="Brief description of your project..."
-                            value={project.description || ''}
-                            onChange={(e) => updateProjectField(index, 'description', e.target.value)}
-                          />
+                          {activeLang === 'en' ? (
+                            <textarea
+                              id={`project-description-${index}`}
+                              className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
+                              placeholder="Brief description of your project..."
+                              value={project.description || ''}
+                              onChange={(e) => updateProjectField(index, 'description', e.target.value)}
+                            />
+                          ) : (
+                            <textarea
+                              id={`project-description-id-${index}`}
+                              className="w-full bg-slate-700/50 border border-blue-500/50 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
+                              placeholder="Deskripsi singkat proyek (Bahasa Indonesia)..."
+                              value={getTranslation(project.metadata, 'id', 'description', '')}
+                              onChange={(e) => updateProjectField(index, 'metadata', setTranslation(project.metadata, 'id', 'description', e.target.value))}
+                            />
+                          )}
                         </div>
 
                         {/* Links Section */}
@@ -946,7 +971,7 @@ export default function ProjectsEditor() {
 
           {filteredProjects.length > 0 && (
             <div className="mt-4 text-sm text-slate-400">
-              Showing {filteredProjects.length} of {projects.length} projects
+              Showing {filteredProjects.length} of {projectsArray.length} projects
               {searchTerm && <span> matching "{searchTerm}"</span>}
             </div>
           )}
@@ -956,7 +981,7 @@ export default function ProjectsEditor() {
       <ConfirmDeleteModal
         isOpen={deleteModalOpen}
         title="Delete Project"
-        itemName={deleteTargetIndex !== null && projects[deleteTargetIndex] ? projects[deleteTargetIndex].title || 'Untitled Project' : ''}
+        itemName={deleteTargetIndex !== null && projectsArray[deleteTargetIndex] ? projectsArray[deleteTargetIndex].title || 'Untitled Project' : ''}
         onConfirm={confirmDeleteProject}
         onCancel={() => {
           setDeleteModalOpen(false);

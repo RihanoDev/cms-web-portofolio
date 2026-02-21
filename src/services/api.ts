@@ -59,7 +59,9 @@ export const api = {
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
 
-      throw new Error(errorMessage);
+      const enhancedError = new Error(errorMessage) as any;
+      enhancedError.response = error.response;
+      throw enhancedError;
     }
   },
 
@@ -76,7 +78,9 @@ export const api = {
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
 
-      throw new Error(errorMessage);
+      const enhancedError = new Error(errorMessage) as any;
+      enhancedError.response = error.response;
+      throw enhancedError;
     }
   },
 
@@ -96,10 +100,14 @@ export const api = {
       // Special handling for auth errors
       if (error.response?.status === 401) {
         localStorage.removeItem("cms_token");
-        throw new Error("Authentication failed. Please log in again.");
+        const authError = new Error("Authentication failed. Please log in again.") as any;
+        authError.response = error.response;
+        throw authError;
       }
 
-      throw new Error(errorMessage);
+      const enhancedError = new Error(errorMessage) as any;
+      enhancedError.response = error.response;
+      throw enhancedError;
     }
   },
 
@@ -115,7 +123,9 @@ export const api = {
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
 
-      throw new Error(errorMessage);
+      const enhancedError = new Error(errorMessage) as any;
+      enhancedError.response = error.response;
+      throw enhancedError;
     }
   },
 
@@ -140,7 +150,9 @@ export const api = {
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
 
-      throw new Error(errorMessage);
+      const enhancedError = new Error(errorMessage) as any;
+      enhancedError.response = error.response;
+      throw enhancedError;
     }
   },
 };

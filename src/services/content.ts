@@ -4,12 +4,18 @@ import { api } from "./api";
 export type Profile = {
   name: string;
   title: string;
+  title_id?: string;
   bio: string;
+  bio_id?: string;
   avatarDataUrl?: string;
   aboutSubtitle?: string;
+  aboutSubtitle_id?: string;
   aboutDescription1?: string;
+  aboutDescription1_id?: string;
   aboutDescription2?: string;
+  aboutDescription2_id?: string;
   aboutDescription3?: string;
+  aboutDescription3_id?: string;
   coreExpertise?: { name: string, percentage: number }[];
   skillCategories?: { category: string, technologies: string[] }[];
   location?: string;
@@ -79,6 +85,7 @@ export type Article = {
   images?: ArticleImage[];
   videos?: ArticleVideo[];
   publishedAt?: string;
+  metadata?: Record<string, any>;
 };
 
 export type ArticleImage = {
@@ -137,17 +144,23 @@ const set = <T>(key: string, value: T) => {
 // Profile management
 const getProfile = async (): Promise<Profile> => {
   try {
-    const response = await api.get("/settings?keys=profile.name,profile.title,profile.bio,profile.avatarUrl,about.subtitle,about.desc1,about.desc2,about.desc3,about.expertise,about.skills,about.location,about.email,about.phone");
+    const response = await api.get("/settings?keys=profile.name,profile.title,profile.title.id,profile.bio,profile.bio.id,profile.avatarUrl,about.subtitle,about.subtitle.id,about.desc1,about.desc1.id,about.desc2,about.desc2.id,about.desc3,about.desc3.id,about.expertise,about.skills,about.location,about.email,about.phone");
     const data = response.data?.data || {};
     return {
       name: data["profile.name"] || "",
       title: data["profile.title"] || "",
+      title_id: data["profile.title.id"] || "",
       bio: data["profile.bio"] || "",
+      bio_id: data["profile.bio.id"] || "",
       avatarDataUrl: data["profile.avatarUrl"] || "",
       aboutSubtitle: data["about.subtitle"] || "",
+      aboutSubtitle_id: data["about.subtitle.id"] || "",
       aboutDescription1: data["about.desc1"] || "",
+      aboutDescription1_id: data["about.desc1.id"] || "",
       aboutDescription2: data["about.desc2"] || "",
+      aboutDescription2_id: data["about.desc2.id"] || "",
       aboutDescription3: data["about.desc3"] || "",
+      aboutDescription3_id: data["about.desc3.id"] || "",
       coreExpertise: data["about.expertise"] ? JSON.parse(data["about.expertise"]) : [
         { name: 'Backend Development', percentage: 95 },
         { name: 'Golang', percentage: 90 },
@@ -175,12 +188,18 @@ const saveProfile = async (v: Profile): Promise<void> => {
     const payload = {
       "profile.name": v.name,
       "profile.title": v.title,
+      "profile.title.id": v.title_id || "",
       "profile.bio": v.bio,
+      "profile.bio.id": v.bio_id || "",
       "profile.avatarUrl": v.avatarDataUrl || "",
       "about.subtitle": v.aboutSubtitle || "",
+      "about.subtitle.id": v.aboutSubtitle_id || "",
       "about.desc1": v.aboutDescription1 || "",
+      "about.desc1.id": v.aboutDescription1_id || "",
       "about.desc2": v.aboutDescription2 || "",
+      "about.desc2.id": v.aboutDescription2_id || "",
       "about.desc3": v.aboutDescription3 || "",
+      "about.desc3.id": v.aboutDescription3_id || "",
       "about.expertise": JSON.stringify(v.coreExpertise || []),
       "about.skills": JSON.stringify(v.skillCategories || []),
       "about.location": v.location || "",
@@ -265,7 +284,7 @@ const saveProjects = async (projects: Project[]) => {
   }
 
   const cleanedProjects = projects.map((project) => {
-    const cleanProject = { ...project };
+    const cleanProject: any = { ...project };
 
     if (!cleanProject.title) cleanProject.title = "Untitled Project";
     if (!cleanProject.slug) {
@@ -273,6 +292,20 @@ const saveProjects = async (projects: Project[]) => {
         .toLowerCase()
         .replace(/[^\w\s-]/g, "")
         .replace(/\s+/g, "-");
+    }
+
+    // Fix technology mapping: frontend uses string[] but backend CreateProjectRequest.technologies expects []int
+    // We should send them as technologyNames instead if they are strings
+    if (Array.isArray(project.technologies) && project.technologies.length > 0) {
+      if (typeof project.technologies[0] === 'string') {
+        cleanProject.technologyNames = project.technologies;
+        cleanProject.technologies = []; // technologies field expects []int, so send empty array
+      }
+    }
+
+    // Map featuredImageUrl to thumbnailUrl for backend compatibility if needed
+    if (cleanProject.featuredImageUrl && !cleanProject.thumbnailUrl) {
+      cleanProject.thumbnailUrl = cleanProject.featuredImageUrl;
     }
 
     if (!Array.isArray(cleanProject.technologies)) cleanProject.technologies = [];
@@ -416,6 +449,8 @@ const saveArticles = async (articles: Article[]) => {
             : [],
           lastUpdated: new Date().toISOString(),
           version: "1.0",
+          // Preserve any translations stored from the bilingual CMS editor
+          ...(article.metadata?.translations ? { translations: article.metadata.translations } : {}),
         },
       };
       // Only PUT for existing articles with a real UUID (not empty, not temp-)

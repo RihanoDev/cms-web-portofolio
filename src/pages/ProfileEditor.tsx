@@ -56,16 +56,24 @@ const FormInput = ({
 )
 
 export default function ProfileEditor() {
+  const [activeLang, setActiveLang] = React.useState<'en' | 'id'>('en')
+
   const [name, setName] = React.useState('')
   const [title, setTitle] = React.useState('')
+  const [title_id, setTitle_id] = React.useState('')
   const [bio, setBio] = React.useState('')
+  const [bio_id, setBio_id] = React.useState('')
   const [preview, setPreview] = React.useState<string>('')
 
   // Additional About fields
   const [aboutSubtitle, setAboutSubtitle] = React.useState('')
+  const [aboutSubtitle_id, setAboutSubtitle_id] = React.useState('')
   const [aboutDescription1, setAboutDescription1] = React.useState('')
+  const [aboutDescription1_id, setAboutDescription1_id] = React.useState('')
   const [aboutDescription2, setAboutDescription2] = React.useState('')
+  const [aboutDescription2_id, setAboutDescription2_id] = React.useState('')
   const [aboutDescription3, setAboutDescription3] = React.useState('')
+  const [aboutDescription3_id, setAboutDescription3_id] = React.useState('')
   const [coreExpertise, setCoreExpertise] = React.useState<{ name: string, percentage: number }[]>([])
   const [skillCategories, setSkillCategories] = React.useState<{ category: string, technologies: string[] }[]>([])
   const [location, setLocation] = React.useState('')
@@ -85,12 +93,18 @@ export default function ProfileEditor() {
         ])
         setName(p.name)
         setTitle(p.title)
+        setTitle_id(p.title_id || '')
         setBio(p.bio)
+        setBio_id(p.bio_id || '')
         setPreview(p.avatarDataUrl || '')
         setAboutSubtitle(p.aboutSubtitle || '')
+        setAboutSubtitle_id(p.aboutSubtitle_id || '')
         setAboutDescription1(p.aboutDescription1 || '')
+        setAboutDescription1_id(p.aboutDescription1_id || '')
         setAboutDescription2(p.aboutDescription2 || '')
+        setAboutDescription2_id(p.aboutDescription2_id || '')
         setAboutDescription3(p.aboutDescription3 || '')
+        setAboutDescription3_id(p.aboutDescription3_id || '')
         setCoreExpertise(p.coreExpertise || [])
         setSkillCategories(p.skillCategories || [])
         setLocation(p.location || '')
@@ -138,8 +152,9 @@ export default function ProfileEditor() {
     setSaving(true)
     try {
       const profile: Profile = {
-        name, title, bio, avatarDataUrl: preview,
-        aboutSubtitle, aboutDescription1, aboutDescription2, aboutDescription3,
+        name, title, title_id, bio, bio_id, avatarDataUrl: preview,
+        aboutSubtitle, aboutSubtitle_id, aboutDescription1, aboutDescription1_id,
+        aboutDescription2, aboutDescription2_id, aboutDescription3, aboutDescription3_id,
         coreExpertise, skillCategories, location, email, phone
       }
       await ContentStore.saveProfile(profile)
@@ -248,6 +263,22 @@ export default function ProfileEditor() {
 
         {/* Column 2-3: Profile Information */}
         <div className="lg:col-span-2">
+          {/* Language Toggle for Translatable Fields */}
+          <div className="flex bg-slate-800 rounded-lg p-1 mb-6 border border-slate-700 w-fit shrink-0">
+            <button
+              onClick={() => setActiveLang('en')}
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${activeLang === 'en' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+            >
+              English
+            </button>
+            <button
+              onClick={() => setActiveLang('id')}
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${activeLang === 'id' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+            >
+              Indonesia
+            </button>
+          </div>
+
           <Card title="Personal Information">
             <FormInput
               label="Full Name"
@@ -258,18 +289,18 @@ export default function ProfileEditor() {
             />
 
             <FormInput
-              label="Professional Title"
+              label={`Professional Title (${activeLang.toUpperCase()})`}
               id="title"
-              value={title}
-              onChange={setTitle}
+              value={activeLang === 'en' ? title : title_id}
+              onChange={activeLang === 'en' ? setTitle : setTitle_id}
               placeholder="e.g. Senior Software Engineer"
             />
 
             <FormInput
-              label="Bio"
+              label={`Bio (${activeLang.toUpperCase()})`}
               id="bio"
-              value={bio}
-              onChange={setBio}
+              value={activeLang === 'en' ? bio : bio_id}
+              onChange={activeLang === 'en' ? setBio : setBio_id}
               multiline={true}
               placeholder="Write a short bio about yourself..."
             />
@@ -278,34 +309,34 @@ export default function ProfileEditor() {
           <div className="mt-6">
             <Card title="About Section & Contact Info">
               <FormInput
-                label="About Subtitle"
+                label={`About Subtitle (${activeLang.toUpperCase()})`}
                 id="aboutSubtitle"
-                value={aboutSubtitle}
-                onChange={setAboutSubtitle}
+                value={activeLang === 'en' ? aboutSubtitle : aboutSubtitle_id}
+                onChange={activeLang === 'en' ? setAboutSubtitle : setAboutSubtitle_id}
                 placeholder="Backend engineer yang fokus pada hasil..."
               />
 
               <FormInput
-                label="About Description (Paragraf 1)"
+                label={`About Description (Paragraf 1) (${activeLang.toUpperCase()})`}
                 id="aboutDescription1"
-                value={aboutDescription1}
-                onChange={setAboutDescription1}
+                value={activeLang === 'en' ? aboutDescription1 : aboutDescription1_id}
+                onChange={activeLang === 'en' ? setAboutDescription1 : setAboutDescription1_id}
                 multiline={true}
                 placeholder="Saya membangun backend yang cepat..."
               />
               <FormInput
-                label="About Description (Paragraf 2)"
+                label={`About Description (Paragraf 2) (${activeLang.toUpperCase()})`}
                 id="aboutDescription2"
-                value={aboutDescription2}
-                onChange={setAboutDescription2}
+                value={activeLang === 'en' ? aboutDescription2 : aboutDescription2_id}
+                onChange={activeLang === 'en' ? setAboutDescription2 : setAboutDescription2_id}
                 multiline={true}
                 placeholder="Beberapa hasil: memangkas p95..."
               />
               <FormInput
-                label="About Description (Paragraf 3)"
+                label={`About Description (Paragraf 3) (${activeLang.toUpperCase()})`}
                 id="aboutDescription3"
-                value={aboutDescription3}
-                onChange={setAboutDescription3}
+                value={activeLang === 'en' ? aboutDescription3 : aboutDescription3_id}
+                onChange={activeLang === 'en' ? setAboutDescription3 : setAboutDescription3_id}
                 multiline={true}
                 placeholder="Prinsip saya: kirim bernilai bisnis..."
               />
