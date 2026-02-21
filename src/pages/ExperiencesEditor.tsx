@@ -5,6 +5,7 @@ import MetadataViewer from "../components/MetadataViewer";
 import MediaUploader from "../components/MediaUploader";
 import { getExperiences, saveExperiences, deleteExperience as apiDeleteExperience } from "../services/content";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import LangToggle, { getTranslation, setTranslation } from "../components/LangToggle";
 
 // Tag interface for relational data
 export interface Tag {
@@ -80,6 +81,7 @@ const Card = ({ title, children }: { title?: string; children: React.ReactNode }
 export default function ExperiencesEditor() {
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [activeLang, setActiveLang] = useState<'en' | 'id'>('en');
   const [saving, setSaving] = useState(false);
   const [savingIndex, setSavingIndex] = useState<number | null>(null); // per-experience save
   const [savedIndex, setSavedIndex] = useState<number | null>(null);   // per-experience success flash
@@ -189,8 +191,16 @@ export default function ExperiencesEditor() {
     const experience = experiences[index];
     if (!experience) return;
 
-    if (!experience.title?.trim() && !experience.company?.trim()) {
-      alert('Experience harus punya jabatan atau nama perusahaan.');
+    if (!experience.title?.trim()) {
+      alert('Pekerjaan (Title) harus diisi.');
+      return;
+    }
+    if (!experience.company?.trim()) {
+      alert('Nama perusahaan (Company) harus diisi.');
+      return;
+    }
+    if (!experience.startDate?.trim()) {
+      alert('Tanggal mulai (Start Date) harus diisi.');
       return;
     }
 
@@ -225,6 +235,15 @@ export default function ExperiencesEditor() {
         alert("You need to log in first.");
         window.location.href = '/login';
         return;
+      }
+
+      // Validate all experiences
+      for (const exp of experiences) {
+        if (!exp.title?.trim() || !exp.company?.trim() || !exp.startDate?.trim()) {
+          alert(`Experience "${exp.title || exp.company || 'Baru'}" belum lengkap. Judul, Perusahaan, dan Tanggal Mulai wajib diisi.`);
+          setSaving(false);
+          return;
+        }
       }
 
       // Call API to save experiences
@@ -436,6 +455,8 @@ export default function ExperiencesEditor() {
                 {/* Detailed editor when expanded */}
                 {isEditing && (
                   <div className="mt-5 space-y-6">
+                    {/* Language Toggle */}
+                    <LangToggle activeLang={activeLang} onChange={setActiveLang} />
                     {/* UUID Generator */}
                     <div>
                       <label className="block text-xs font-medium text-slate-400 mb-2">Experience ID</label>
@@ -445,14 +466,24 @@ export default function ExperiencesEditor() {
                     {/* Basic Information */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-medium text-slate-400 mb-2">Job Title *</label>
-                        <input
-                          type="text"
-                          className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Software Engineer"
-                          value={experience.title}
-                          onChange={(e) => updateExperienceField(originalIndex, "title", e.target.value)}
-                        />
+                        <label className="block text-xs font-medium text-slate-400 mb-2">Job Title * {activeLang === 'id' && <span className="text-blue-400">(ID)</span>}</label>
+                        {activeLang === 'en' ? (
+                          <input
+                            type="text"
+                            className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Software Engineer"
+                            value={experience.title}
+                            onChange={(e) => updateExperienceField(originalIndex, "title", e.target.value)}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            className="w-full bg-slate-700/50 border border-blue-500/50 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Judul Pekerjaan (Indonesia)"
+                            value={getTranslation(experience.metadata, 'id', 'title', '')}
+                            onChange={(e) => updateExperienceField(originalIndex, "metadata", setTranslation(experience.metadata, 'id', 'title', e.target.value))}
+                          />
+                        )}
                       </div>
 
                       <div>
@@ -579,10 +610,17 @@ export default function ExperiencesEditor() {
 
                     {/* Description */}
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-2">Job Description</label>
-                      <RichTextEditor value={experience.description} onChange={(value) => updateExperienceField(originalIndex, "description", value)} placeholder="Describe your role, achievements, and key responsibilities..." />
+                      <label className="block text-xs font-medium text-slate-400 mb-2">Job Description {activeLang === 'id' && <span className="text-blue-400">(ID)</span>}</label>
+                      {activeLang === 'en' ? (
+                        <RichTextEditor value={experience.description} onChange={(val) => updateExperienceField(originalIndex, "description", val)} placeholder="Describe your role, achievements, and key responsibilities..." />
+                      ) : (
+                        <RichTextEditor
+                          value={getTranslation(experience.metadata, 'id', 'description', '')}
+                          onChange={(val) => updateExperienceField(originalIndex, "metadata", setTranslation(experience.metadata, 'id', 'description', val))}
+                          placeholder="Deskripsikan peran, pencapaian, dan tanggung jawab utama (Bahasa Indonesia)..."
+                        />
+                      )}
                     </div>
-
                     {/* Responsibilities */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
@@ -761,6 +799,6 @@ export default function ExperiencesEditor() {
         }}
         isDeleting={isDeleting}
       />
-    </div>
+    </div >
   );
 }

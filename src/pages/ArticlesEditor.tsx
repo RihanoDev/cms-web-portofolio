@@ -10,6 +10,7 @@ import ViewTracker from '../components/ViewTracker';
 import MetadataViewer from '../components/MetadataViewer';
 import { getContentViews, generateSearchQuery } from '../services/analytics';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import LangToggle, { getTranslation, setTranslation } from '../components/LangToggle';
 
 // Card component for consistent UI
 const Card = ({ title, children }: { title?: string, children: React.ReactNode }) => (
@@ -32,6 +33,7 @@ export default function ArticlesEditor() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [activeLang, setActiveLang] = useState<'en' | 'id'>('en');
   const [saving, setSaving] = useState(false);
   const [savingIndex, setSavingIndex] = useState<number | null>(null); // per-article save
   const [savedIndex, setSavedIndex] = useState<number | null>(null);   // per-article success flash
@@ -97,8 +99,9 @@ export default function ArticlesEditor() {
 
   // Create a new article with defaults
   const addNewArticle = () => {
+    const articleId = 'temp-' + Date.now();
     const newArticle: Article = {
-      id: '', // Will be set by UuidGenerator
+      id: articleId,
       title: '',
       slug: '',
       excerpt: '',
@@ -341,13 +344,23 @@ export default function ArticlesEditor() {
           {/* Article header with title and actions */}
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
-              <input
-                id={`article-title-${index}`}
-                className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white text-lg font-medium placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
-                placeholder="Article Title"
-                value={article.title || ''}
-                onChange={e => handleTitleChange(index, e.target.value)}
-              />
+              {activeLang === 'en' ? (
+                <input
+                  id={`article-title-${index}`}
+                  className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white text-lg font-medium placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                  placeholder="Article Title (EN)"
+                  value={article.title || ''}
+                  onChange={e => handleTitleChange(index, e.target.value)}
+                />
+              ) : (
+                <input
+                  id={`article-title-id-${index}`}
+                  className="w-full bg-slate-700/50 border border-blue-500/50 rounded-lg px-4 py-2 text-white text-lg font-medium placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                  placeholder="Judul Artikel (ID)"
+                  value={getTranslation(article.metadata, 'id', 'title', '')}
+                  onChange={e => updateArticleField(index, 'metadata', setTranslation(article.metadata ?? {}, 'id', 'title', e.target.value))}
+                />
+              )}
             </div>
             <div className="flex items-center ml-4 space-x-2">
               <button
@@ -434,6 +447,8 @@ export default function ArticlesEditor() {
           {/* Detailed editor when expanded */}
           {isEditing && (
             <div className="mt-5 space-y-6">
+              {/* Language Toggle */}
+              <LangToggle activeLang={activeLang} onChange={setActiveLang} />
               {/* UUID Generator */}
               <div>
                 <label htmlFor={`article-uuid-${index}`} className="block text-xs font-medium text-slate-400 mb-2">
@@ -541,15 +556,25 @@ export default function ArticlesEditor() {
               {/* Excerpt */}
               <div>
                 <label htmlFor={`article-excerpt-${index}`} className="block text-xs font-medium text-slate-400 mb-2">
-                  Excerpt / Summary
+                  Excerpt / Summary {activeLang === 'id' && <span className="text-blue-400">(ID)</span>}
                 </label>
-                <textarea
-                  id={`article-excerpt-${index}`}
-                  className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
-                  placeholder="Brief summary of the article..."
-                  value={article.excerpt || ''}
-                  onChange={(e) => updateArticleField(index, 'excerpt', e.target.value)}
-                />
+                {activeLang === 'en' ? (
+                  <textarea
+                    id={`article-excerpt-${index}`}
+                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
+                    placeholder="Brief summary of the article..."
+                    value={article.excerpt || ''}
+                    onChange={(e) => updateArticleField(index, 'excerpt', e.target.value)}
+                  />
+                ) : (
+                  <textarea
+                    id={`article-excerpt-id-${index}`}
+                    className="w-full bg-slate-700/50 border border-blue-500/50 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
+                    placeholder="Ringkasan singkat artikel (Bahasa Indonesia)..."
+                    value={getTranslation(article.metadata, 'id', 'excerpt', '')}
+                    onChange={(e) => updateArticleField(index, 'metadata', setTranslation(article.metadata ?? {}, 'id', 'excerpt', e.target.value))}
+                  />
+                )}
               </div>
 
               {/* Featured Image */}
@@ -907,7 +932,10 @@ export default function ArticlesEditor() {
               </div>
             )}
 
-            {filteredArticles.map((article, index) => renderArticleCard(article, index))}
+            {filteredArticles.map((article) => {
+              const originalIndex = articlesArray.findIndex(a => a.id === article.id);
+              return renderArticleCard(article, originalIndex);
+            })}
           </div>
 
           {filteredArticles.length > 0 && (

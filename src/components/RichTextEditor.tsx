@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 
 interface RichTextEditorProps {
@@ -15,6 +16,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const onChangeRef = useRef(onChange);
   const isInternalChange = useRef(false);
@@ -28,9 +30,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Dynamically import Quill (CSS already imported statically at top)
-    import('quill').then(({ default: Quill }) => {
-      if (!containerRef.current || quillRef.current) return;
+    try {
+      if (quillRef.current) return;
 
       // Create editor div inside the container
       const editorEl = document.createElement('div');
@@ -55,7 +56,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         formats: [
           'header',
           'bold', 'italic', 'underline', 'strike', 'blockquote',
-          'list', 'bullet', 'indent',
+          'list', 'indent',
           'color', 'background',
           'align',
           'link', 'image', 'video',
@@ -82,7 +83,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
       quillRef.current = quill;
       setIsLoaded(true);
-    });
+    } catch (err) {
+      console.error('Failed to initialize Quill:', err);
+      setError('Failed to load editor. Please refresh the page.');
+    }
 
     // Cleanup on unmount
     return () => {
@@ -106,10 +110,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, [value]);
 
-  if (!isLoaded) {
+  if (error) {
     return (
-      <div className="w-full bg-slate-700/50 border border-slate-600 rounded-lg p-4 min-h-[250px] flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">Loading editor...</div>
+      <div className="w-full bg-red-900/20 border border-red-500/50 rounded-lg p-4 min-h-[100px] flex items-center justify-center">
+        <div className="text-red-400">{error}</div>
       </div>
     );
   }
@@ -204,8 +208,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }
       `}</style>
 
+      {!isLoaded && (
+        <div className="w-full bg-slate-700/50 border border-slate-600 rounded-lg p-4 min-h-[250px] flex items-center justify-center">
+          <div className="animate-pulse text-slate-400">Loading editor...</div>
+        </div>
+      )}
+
       {/* Quill mounts its toolbar + editor into this div */}
-      <div ref={containerRef} />
+      <div
+        ref={containerRef}
+        className={!isLoaded ? 'absolute h-0 overflow-hidden opacity-0 pointer-events-none' : ''}
+      />
     </div>
   );
 };
