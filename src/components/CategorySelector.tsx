@@ -21,22 +21,25 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   );
 
   const handleToggleCategory = (categoryId: string | number) => {
-    if (selectedCategories.includes(categoryId)) {
-      onChange(selectedCategories.filter((id) => id !== categoryId));
+    // Robustly check if it's already selected by converting to string
+    const isAlreadySelected = selectedCategories.some(id => String(id) === String(categoryId));
+
+    if (isAlreadySelected) {
+      onChange(selectedCategories.filter((id) => String(id) !== String(categoryId)));
     } else if (selectedCategories.length < maxSelections) {
       onChange([...selectedCategories, categoryId]);
     }
   };
 
   const isCategorySelected = (categoryId: string | number) => {
-    return selectedCategories.includes(categoryId);
+    return selectedCategories.some(id => String(id) === String(categoryId));
   };
 
   // Get selected category names
   const selectedCategoryNames = selectedCategories.map(id => {
-    const found = categories.find(category => category.id === id);
+    const found = categories.find(category => String(category.id) === String(id));
     if (found) return found.name;
-    // If it's a string that doesn't match an ID, it's likely a new category name
+    // If it's a string, it might be a new category name or a just-created ID not yet in the list
     return String(id);
   });
 
@@ -79,6 +82,20 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                   placeholder="Search categories..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchTerm.trim() !== '') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // Only add if not an exact match already
+                      const exactMatch = categories.find(c => c.name.toLowerCase() === searchTerm.trim().toLowerCase());
+                      if (exactMatch) {
+                        handleToggleCategory(exactMatch.id);
+                      } else {
+                        handleToggleCategory(searchTerm.trim());
+                      }
+                      setSearchTerm('');
+                    }
+                  }}
                   // Prevent click from closing dropdown
                   onClick={(e) => e.stopPropagation()}
                 />
@@ -106,7 +123,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                 <div className="text-xs font-medium text-slate-400 mb-2">Selected Categories:</div>
                 <div className="flex flex-wrap gap-2">
                   {selectedCategories.map((id) => {
-                    const category = categories.find((c) => c.id === id);
+                    const category = categories.find((c) => String(c.id) === String(id));
                     const name = category ? category.name : String(id);
                     return (
                       <button
@@ -141,7 +158,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
               {filteredCategories.length > 0 ? (
                 filteredCategories.map((category) => (
                   <button
-                    key={category.id}
+                    key={String(category.id)}
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -163,23 +180,26 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                     </div>
                   </button>
                 ))
-              ) : searchTerm.trim() !== '' ? (
-                <div className="px-4 py-3">
+              ) : null}
+
+              {/* Add new category button - show if search term doesn't exactly match any category */}
+              {searchTerm.trim() !== '' && !categories.some(c => c.name.toLowerCase() === searchTerm.trim().toLowerCase()) && (
+                <div className="px-4 py-3 border-t border-slate-700">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const newId = `new-${Date.now()}`;
-                      // We need to pass the name up too, but CategorySelector only passes IDs
-                      // So we might need to adjust how ArticleEditor handles it
-                      handleToggleCategory(searchTerm); // Passing string name instead of ID
+                      handleToggleCategory(searchTerm.trim());
+                      setSearchTerm('');
                     }}
                     className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg py-2 text-sm border border-dashed border-blue-500/50 transition-all font-medium"
                   >
                     + Create new category: "{searchTerm}"
                   </button>
                 </div>
-              ) : (
+              )}
+
+              {filteredCategories.length === 0 && searchTerm.trim() === '' && (
                 <div className="text-slate-400 px-4 py-3 text-center">No categories found</div>
               )}
             </div>

@@ -140,6 +140,17 @@ export default function ArticlesEditor() {
     try {
       const [saved] = await ContentStore.saveArticles([article]);
       setArticles(prev => prev.map((a, i) => i === index ? { ...saved } : a));
+
+      // Refresh categories and tags because new ones might have been created
+      try {
+        const loadedCats = await ContentStore.getCategories();
+        if (Array.isArray(loadedCats)) setCategories(loadedCats);
+        const loadedTags = await ContentStore.getTags();
+        if (Array.isArray(loadedTags)) setTags(loadedTags);
+      } catch (e) {
+        console.error("Failed to refresh metadata after save", e);
+      }
+
       setSavedIndex(index);
       setTimeout(() => setSavedIndex(null), 3000);
     } catch (err: any) {
@@ -167,6 +178,17 @@ export default function ArticlesEditor() {
       }
 
       await ContentStore.saveArticles(currentArticles);
+
+      // Refresh metadata because new categories or tags might have been created
+      try {
+        const loadedCats = await ContentStore.getCategories();
+        if (Array.isArray(loadedCats)) setCategories(loadedCats);
+        const loadedTags = await ContentStore.getTags();
+        if (Array.isArray(loadedTags)) setTags(loadedTags);
+      } catch (e) {
+        console.error("Failed to refresh metadata after save", e);
+      }
+
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error: any) {

@@ -58,7 +58,9 @@ const TechnologySelector: React.FC<TechnologySelectorProps> = (props) => {
     );
 
     const handleSelectTechnology = (tech: string) => {
-      onChange([...selectedTechnologies, tech]);
+      if (!selectedTechnologies.includes(tech)) {
+        onChange([...selectedTechnologies, tech]);
+      }
       setSearchTerm('');
     };
 
@@ -111,6 +113,14 @@ const TechnologySelector: React.FC<TechnologySelectorProps> = (props) => {
                   placeholder="Search technologies..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchTerm.trim() !== '') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const exactMatch = technologies.find(t => t.toLowerCase() === searchTerm.trim().toLowerCase());
+                      handleSelectTechnology(exactMatch || searchTerm.trim());
+                    }
+                  }}
                   onClick={(e) => e.stopPropagation()}
                 />
                 {searchTerm && (
@@ -171,8 +181,11 @@ const TechnologySelector: React.FC<TechnologySelectorProps> = (props) => {
                     </svg>
                   </button>
                 ))
-              ) : searchTerm.trim() !== '' ? (
-                <div className="px-4 py-3">
+              ) : null}
+
+              {/* Add new technology button - show if no exact match */}
+              {searchTerm.trim() !== '' && !technologies.some(t => t.toLowerCase() === searchTerm.trim().toLowerCase()) && (
+                <div className="px-4 py-3 border-t border-slate-700">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -184,7 +197,9 @@ const TechnologySelector: React.FC<TechnologySelectorProps> = (props) => {
                     + Add new technology: "{searchTerm}"
                   </button>
                 </div>
-              ) : (
+              )}
+
+              {filteredTechnologies.length === 0 && searchTerm.trim() === '' && (
                 <div className="px-4 py-3 text-center text-slate-400">
                   No matching technologies found
                 </div>
@@ -216,21 +231,23 @@ const TechnologySelector: React.FC<TechnologySelectorProps> = (props) => {
   const filteredTechnologies = technologies.filter(
     (tech) =>
       tech.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !selectedTechnologies.includes(tech.id)
+      !selectedTechnologies.some(st => String(st) === String(tech.id))
   );
 
   const handleSelectTechnology = (techId: string | number) => {
-    onChange([...selectedTechnologies, techId]);
+    if (!selectedTechnologies.some(st => String(st) === String(techId))) {
+      onChange([...selectedTechnologies, techId]);
+    }
     setSearchTerm('');
     setShowDropdown(false);
   };
 
   const handleRemoveTechnology = (techId: string | number) => {
-    onChange(selectedTechnologies.filter((id) => id !== techId));
+    onChange(selectedTechnologies.filter((id) => String(id) !== String(techId)));
   };
 
   const selectedTechItems = technologies
-    .filter((tech) => selectedTechnologies.includes(tech.id))
+    .filter((tech) => selectedTechnologies.some(st => String(st) === String(tech.id)))
     .map((tech) => ({
       id: tech.id,
       name: tech.name,
@@ -262,6 +279,15 @@ const TechnologySelector: React.FC<TechnologySelectorProps> = (props) => {
           onChange={(e) => {
             setSearchTerm(e.target.value);
             setShowDropdown(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && searchTerm.trim() !== '') {
+              e.preventDefault();
+              const exactMatch = technologies.find(t => t.name.toLowerCase() === searchTerm.trim().toLowerCase());
+              if (exactMatch) {
+                handleSelectTechnology(exactMatch.id);
+              }
+            }
           }}
           onFocus={() => setShowDropdown(true)}
           onBlur={() => {
