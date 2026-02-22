@@ -15,11 +15,11 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   const filteredCategories = categories.filter(
     (category) => category?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) || false
   );
-  
+
   const handleToggleCategory = (categoryId: string | number) => {
     if (selectedCategories.includes(categoryId)) {
       onChange(selectedCategories.filter((id) => id !== categoryId));
@@ -27,21 +27,24 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
       onChange([...selectedCategories, categoryId]);
     }
   };
-  
+
   const isCategorySelected = (categoryId: string | number) => {
     return selectedCategories.includes(categoryId);
   };
-  
+
   // Get selected category names
-  const selectedCategoryNames = categories
-    .filter(category => selectedCategories.includes(category.id))
-    .map(category => category.name);
-  
+  const selectedCategoryNames = selectedCategories.map(id => {
+    const found = categories.find(category => category.id === id);
+    if (found) return found.name;
+    // If it's a string that doesn't match an ID, it's likely a new category name
+    return String(id);
+  });
+
   return (
     <div className="w-full">
       <div className="relative">
         {/* Selection display field - shows count and opens dropdown */}
-        <div 
+        <div
           className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white cursor-pointer flex items-center justify-between"
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         >
@@ -54,10 +57,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
               <span className="text-slate-400">Select categories...</span>
             )}
           </div>
-          <svg 
+          <svg
             className={`w-5 h-5 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-            fill="none" 
-            stroke="currentColor" 
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
@@ -96,41 +99,43 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                 )}
               </div>
             </div>
-            
+
             {/* Selected categories summary */}
             {selectedCategoryNames.length > 0 && (
               <div className="px-3 py-2 border-b border-slate-700">
                 <div className="text-xs font-medium text-slate-400 mb-2">Selected Categories:</div>
                 <div className="flex flex-wrap gap-2">
-                  {categories
-                    .filter((category) => selectedCategories.includes(category.id))
-                    .map((category) => (
+                  {selectedCategories.map((id) => {
+                    const category = categories.find((c) => c.id === id);
+                    const name = category ? category.name : String(id);
+                    return (
                       <button
-                        key={category.id}
+                        key={id}
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleToggleCategory(category.id);
+                          handleToggleCategory(id);
                         }}
                         className="bg-blue-600 text-white text-sm rounded-lg px-3 py-1 flex items-center gap-1"
                       >
-                        <span>{category.name}</span>
+                        <span>{name}</span>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                       </button>
-                    ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
-            
+
             {/* Max selection warning */}
             {selectedCategories.length >= maxSelections && (
               <div className="px-3 py-2 text-xs text-amber-400 border-b border-slate-700">
                 Maximum category limit reached ({maxSelections})
               </div>
             )}
-            
+
             {/* Categories list */}
             <div className="max-h-60 overflow-y-auto">
               {filteredCategories.length > 0 ? (
@@ -142,11 +147,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                       e.stopPropagation();
                       handleToggleCategory(category.id);
                     }}
-                    className={`w-full text-left px-4 py-2 border-b border-slate-700 last:border-b-0 hover:bg-slate-700 transition-colors ${
-                      isCategorySelected(category.id)
-                        ? 'bg-slate-700 text-blue-400'
-                        : 'text-white'
-                    }`}
+                    className={`w-full text-left px-4 py-2 border-b border-slate-700 last:border-b-0 hover:bg-slate-700 transition-colors ${isCategorySelected(category.id)
+                      ? 'bg-slate-700 text-blue-400'
+                      : 'text-white'
+                      }`}
                     disabled={selectedCategories.length >= maxSelections && !isCategorySelected(category.id)}
                   >
                     <div className="flex items-center justify-between">
@@ -159,11 +163,27 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                     </div>
                   </button>
                 ))
+              ) : searchTerm.trim() !== '' ? (
+                <div className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newId = `new-${Date.now()}`;
+                      // We need to pass the name up too, but CategorySelector only passes IDs
+                      // So we might need to adjust how ArticleEditor handles it
+                      handleToggleCategory(searchTerm); // Passing string name instead of ID
+                    }}
+                    className="w-full bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg py-2 text-sm border border-dashed border-blue-500/50 transition-all font-medium"
+                  >
+                    + Create new category: "{searchTerm}"
+                  </button>
+                </div>
               ) : (
                 <div className="text-slate-400 px-4 py-3 text-center">No categories found</div>
               )}
             </div>
-            
+
             {/* Close button */}
             <div className="p-3 border-t border-slate-700 flex justify-end">
               <button
@@ -180,7 +200,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
           </div>
         )}
       </div>
-      
+
       {/* Display selected count when dropdown is closed */}
       {!isDropdownOpen && selectedCategoryNames.length > 0 && (
         <div className="mt-2 text-sm text-slate-400">
