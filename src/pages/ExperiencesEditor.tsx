@@ -98,12 +98,12 @@ export default function ExperiencesEditor() {
   useEffect(() => {
     const loadExperiences = async () => {
       try {
-        
+
         const apiExperiences = await getExperiences();
-        
+
         setExperiences(apiExperiences as unknown as Experience[]);
       } catch (error) {
-        
+
         setExperiences([]);
       }
     };
@@ -157,7 +157,7 @@ export default function ExperiencesEditor() {
       try {
         await apiDeleteExperience(experience.id);
       } catch (err: any) {
-        
+
         setError("Failed to delete experience. Please try again.");
         setIsDeleting(false);
         setDeleteModalOpen(false);
@@ -218,7 +218,7 @@ export default function ExperiencesEditor() {
       setSavedIndex(index);
       setTimeout(() => setSavedIndex(null), 3000);
     } catch (err: any) {
-      
+
       alert(`Gagal menyimpan "${experience.title || experience.company}": ${err?.message || 'Unknown error'}`);
     } finally {
       setSavingIndex(null);
@@ -247,12 +247,12 @@ export default function ExperiencesEditor() {
       }
 
       // Call API to save experiences
-      
+
       await saveExperiences(experiences as any);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error: any) {
-      
+
       alert(`Failed to save experiences: ${error?.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
@@ -525,9 +525,9 @@ export default function ExperiencesEditor() {
                       <div>
                         <label className="block text-xs font-medium text-slate-400 mb-2">Start Date *</label>
                         <input
-                          type="month"
+                          type="date"
                           className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          value={experience.startDate}
+                          value={(experience.startDate || '').substring(0, 10)}
                           onChange={(e) => updateExperienceField(originalIndex, "startDate", e.target.value)}
                         />
                       </div>
@@ -535,9 +535,9 @@ export default function ExperiencesEditor() {
                       <div>
                         <label className="block text-xs font-medium text-slate-400 mb-2">End Date</label>
                         <input
-                          type="month"
+                          type="date"
                           className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                          value={experience.endDate || ""}
+                          value={(experience.endDate || "").substring(0, 10)}
                           disabled={experience.current}
                           onChange={(e) => updateExperienceField(originalIndex, "endDate", e.target.value)}
                         />

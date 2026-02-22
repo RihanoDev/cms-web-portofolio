@@ -16,11 +16,14 @@ export type Profile = {
   aboutDescription2_id?: string;
   aboutDescription3?: string;
   aboutDescription3_id?: string;
-  coreExpertise?: { name: string, percentage: number }[];
-  skillCategories?: { category: string, technologies: string[] }[];
+  coreExpertise?: { name: string; percentage: number }[];
+  skillCategories?: { category: string; technologies: string[] }[];
   location?: string;
+  location_id?: string;
   email?: string;
+  email_id?: string;
   phone?: string;
+  phone_id?: string;
 };
 
 export type Tag = {
@@ -144,7 +147,9 @@ const set = <T>(key: string, value: T) => {
 // Profile management
 const getProfile = async (): Promise<Profile> => {
   try {
-    const response = await api.get("/settings?keys=profile.name,profile.title,profile.title.id,profile.bio,profile.bio.id,profile.avatarUrl,about.subtitle,about.subtitle.id,about.desc1,about.desc1.id,about.desc2,about.desc2.id,about.desc3,about.desc3.id,about.expertise,about.skills,about.location,about.email,about.phone");
+    const response = await api.get(
+      "/settings?keys=profile.name,profile.title,profile.title.id,profile.bio,profile.bio.id,profile.avatarUrl,about.subtitle,about.subtitle.id,about.desc1,about.desc1.id,about.desc2,about.desc2.id,about.desc3,about.desc3.id,about.expertise,about.skills,about.location,about.location.id,about.email,about.email.id,about.phone,about.phone.id",
+    );
     const data = response.data?.data || {};
     return {
       name: data["profile.name"] || "",
@@ -161,24 +166,60 @@ const getProfile = async (): Promise<Profile> => {
       aboutDescription2_id: data["about.desc2.id"] || "",
       aboutDescription3: data["about.desc3"] || "",
       aboutDescription3_id: data["about.desc3.id"] || "",
-      coreExpertise: data["about.expertise"] ? JSON.parse(data["about.expertise"]) : [
-        { name: 'Backend Development', percentage: 95 },
-        { name: 'Golang', percentage: 90 },
-        { name: 'Database Design', percentage: 85 },
-        { name: 'System Architecture', percentage: 80 }
-      ],
-      skillCategories: data["about.skills"] ? JSON.parse(data["about.skills"]) : [
-        { category: "Backend", technologies: ["Go", "Node.js", "Python", "Java", "C++"] },
-        { category: "Database", technologies: ["PostgreSQL", "MySQL", "MongoDB", "Redis", "ElasticSearch"] },
-        { category: "DevOps", technologies: ["Docker", "Kubernetes", "AWS", "Jenkins", "Terraform"] },
-        { category: "Architecture", technologies: ["Microservices", "REST API", "gRPC", "GraphQL", "Event Sourcing"] },
-      ],
+      coreExpertise: data["about.expertise"]
+        ? JSON.parse(data["about.expertise"])
+        : [
+          { name: "Backend Development", percentage: 95 },
+          { name: "Golang", percentage: 90 },
+          { name: "Database Design", percentage: 85 },
+          { name: "System Architecture", percentage: 80 },
+        ],
+      skillCategories: data["about.skills"]
+        ? JSON.parse(data["about.skills"])
+        : [
+          {
+            category: "Backend",
+            technologies: ["Go", "Node.js", "Python", "Java", "C++"],
+          },
+          {
+            category: "Database",
+            technologies: [
+              "PostgreSQL",
+              "MySQL",
+              "MongoDB",
+              "Redis",
+              "ElasticSearch",
+            ],
+          },
+          {
+            category: "DevOps",
+            technologies: [
+              "Docker",
+              "Kubernetes",
+              "AWS",
+              "Jenkins",
+              "Terraform",
+            ],
+          },
+          {
+            category: "Architecture",
+            technologies: [
+              "Microservices",
+              "REST API",
+              "gRPC",
+              "GraphQL",
+              "Event Sourcing",
+            ],
+          },
+        ],
       location: data["about.location"] || "",
+      location_id: data["about.location.id"] || "",
       email: data["about.email"] || "",
-      phone: data["about.phone"] || ""
+      email_id: data["about.email.id"] || "",
+      phone: data["about.phone"] || "",
+      phone_id: data["about.phone.id"] || "",
     };
   } catch (error) {
-    
     return { name: "", title: "", bio: "", avatarDataUrl: "" };
   }
 };
@@ -203,12 +244,14 @@ const saveProfile = async (v: Profile): Promise<void> => {
       "about.expertise": JSON.stringify(v.coreExpertise || []),
       "about.skills": JSON.stringify(v.skillCategories || []),
       "about.location": v.location || "",
+      "about.location.id": v.location_id || "",
       "about.email": v.email || "",
-      "about.phone": v.phone || ""
+      "about.email.id": v.email_id || "",
+      "about.phone": v.phone || "",
+      "about.phone.id": v.phone_id || "",
     };
     await api.put("/settings", payload);
   } catch (error) {
-    
     throw error;
   }
 };
@@ -217,277 +260,292 @@ const saveProfile = async (v: Profile): Promise<void> => {
 const getProjects = async (): Promise<Project[]> => {
   try {
     const response = await api.get("/projects");
-    
 
     const responseData = response.data?.data;
-    const projects = Array.isArray(responseData?.data) ? responseData.data : Array.isArray(responseData) ? responseData : [];
+    const projects = Array.isArray(responseData?.data)
+      ? responseData.data
+      : Array.isArray(responseData)
+        ? responseData
+        : [];
 
-    return projects.map((project: any) => ({
-      id: project.id || "",
-      title: project.title || "",
-      slug: project.slug || "",
-      description: project.description || "",
-      content: project.content || "",
-      thumbnailUrl: project.thumbnailURL || project.thumbnail_url || "",
-      featuredImageUrl: project.featuredImageURL || project.featured_image_url || "",
-      status: project.status || "draft",
-      categoryId: project.categoryID || project.category_id,
-      categories: project.categories || [],
-      tags: project.tags || [],
-      githubUrl: project.githubURL || project.github_url || "",
-      liveDemoUrl: project.liveDemoURL || project.live_demo_url || "",
-      technologies: project.technologies || [],
-      images: project.images || [],
-      videos: project.videos || [],
-    }));
+    return projects.map((project: any) => {
+      // Technologies dari backend bisa berupa array of {id, name, slug} atau string[]
+      const techRaw = project.technologies || [];
+      const technologies: string[] = techRaw
+        .map((t: any) => (typeof t === "string" ? t : t?.name || ""))
+        .filter(Boolean);
+
+      return {
+        id: project.id || "",
+        title: project.title || "",
+        slug: project.slug || "",
+        description: project.description || "",
+        content: project.content || "",
+        // Backend mengembalikan camelCase: thumbnailUrl, githubUrl, liveDemoUrl
+        thumbnailUrl:
+          project.thumbnailUrl ||
+          project.thumbnailURL ||
+          project.thumbnail_url ||
+          "",
+        featuredImageUrl:
+          project.thumbnailUrl ||
+          project.featuredImageUrl ||
+          project.featuredImageURL ||
+          project.featured_image_url ||
+          "",
+        status: project.status || "draft",
+        categoryId:
+          project.categoryId || project.categoryID || project.category_id,
+        category: project.category || null,
+        categories: Array.isArray(project.categories) && project.categories.length > 0
+          ? project.categories
+          : (project.categoryId ? [{ id: project.categoryId, name: project.category || "Selected" }] : []),
+        tags: Array.isArray(project.tags) ? project.tags : [],
+        link: project.liveDemoUrl || project.demoUrl || project.link || "",
+        githubUrl:
+          project.githubUrl || project.githubURL || project.github_url || "",
+        demoUrl:
+          project.liveDemoUrl ||
+          project.liveDemoURL ||
+          project.live_demo_url ||
+          "",
+        liveDemoUrl:
+          project.liveDemoUrl ||
+          project.liveDemoURL ||
+          project.live_demo_url ||
+          "",
+        technologies,
+        images: project.images || [],
+        videos: project.videos || [],
+        metadata: project.metadata || {},
+      };
+    });
   } catch (error) {
-    
     return [];
   }
 };
 
 const saveProjects = async (projects: Project[]) => {
-  
-
   const token = localStorage.getItem("cms_token");
-  
-
   if (!token) {
-    
-    throw new Error("Authentication required. Please login again to save projects to the server.");
+    throw new Error(
+      "Authentication required. Please login again to save projects to the server.",
+    );
   }
 
-  if (token) {
-    const tokenPrefix = token.substring(0, 10);
-    const tokenSuffix = token.substring(token.length - 10);
-    
+  const updatedProjects: Project[] = [];
 
-    let cleanToken = token;
-    let tokenWasCleaned = false;
-
-    if (token.startsWith('"') || token.endsWith('"')) {
-      
-      cleanToken = token.replace(/^"|"$/g, "");
-      tokenWasCleaned = true;
+  for (const project of projects) {
+    const allTechNames = new Set<string>();
+    if (Array.isArray(project.technologies)) {
+      project.technologies.forEach((t: any) => {
+        if (typeof t === "string") allTechNames.add(t);
+        else if (t?.name) allTechNames.add(t.name);
+      });
     }
-
-    if (token.includes("\\")) {
-      
-      cleanToken = cleanToken.replace(/\\/g, "");
-      tokenWasCleaned = true;
+    const techIds: number[] = [];
+    if (Array.isArray(project.tags)) {
+      project.tags.forEach((t: any) => {
+        if (t?.id && t.id > 0) techIds.push(Number(t.id));
+        else if (t?.name) allTechNames.add(t.name);
+      });
     }
+    const techNames: string[] = Array.from(allTechNames);
 
-    if (tokenWasCleaned) {
-      
-      localStorage.setItem("cms_token", cleanToken);
-    }
-  }
-
-  const cleanedProjects = projects.map((project) => {
-    const cleanProject: any = { ...project };
-
-    if (!cleanProject.title) cleanProject.title = "Untitled Project";
-    if (!cleanProject.slug) {
-      cleanProject.slug = cleanProject.title
+    // Pastikan title & slug selalu ada
+    const title = project.title?.trim() || "Untitled Project";
+    const slug =
+      project.slug?.trim() ||
+      title
         .toLowerCase()
         .replace(/[^\w\s-]/g, "")
         .replace(/\s+/g, "-");
+
+    // Payload — hanya sertakan field yang ada (partial/patch friendly)
+    const payload: Record<string, any> = {
+      title,
+      slug,
+      status: project.status || "draft",
+    };
+    if (project.description !== undefined)
+      payload.description = project.description;
+    if (project.content !== undefined) payload.content = project.content;
+    if (
+      project.thumbnailUrl !== undefined ||
+      project.featuredImageUrl !== undefined
+    )
+      payload.thumbnailUrl =
+        project.thumbnailUrl || project.featuredImageUrl || "";
+    if (project.categories && project.categories.length > 0) {
+      payload.categoryId = project.categories[0].id;
+    } else if (project.categoryId !== undefined) {
+      payload.categoryId = project.categoryId ?? null;
+    }
+    if (project.githubUrl !== undefined) payload.githubUrl = project.githubUrl;
+    if (
+      project.liveDemoUrl !== undefined ||
+      project.demoUrl !== undefined ||
+      project.link !== undefined
+    ) {
+      payload.liveDemoUrl =
+        project.liveDemoUrl || project.demoUrl || project.link || "";
     }
 
-    // Fix technology mapping: frontend uses string[] but backend CreateProjectRequest.technologies expects []int
-    // We should send them as technologyNames instead if they are strings
-    if (Array.isArray(project.technologies) && project.technologies.length > 0) {
-      if (typeof project.technologies[0] === 'string') {
-        cleanProject.technologyNames = project.technologies;
-        cleanProject.technologies = []; // technologies field expects []int, so send empty array
-      }
-    }
+    // Always include technologies payload for backend parsing
+    payload.technologies = techIds;
+    payload.technologyNames = techNames;
+    const finalMetadata = project.metadata ? { ...project.metadata } : {};
+    if (project.images !== undefined) finalMetadata.images = project.images;
+    if (project.videos !== undefined) finalMetadata.videos = project.videos;
+    payload.metadata = finalMetadata;
 
-    // Map featuredImageUrl to thumbnailUrl for backend compatibility if needed
-    if (cleanProject.featuredImageUrl && !cleanProject.thumbnailUrl) {
-      cleanProject.thumbnailUrl = cleanProject.featuredImageUrl;
-    }
-
-    if (!Array.isArray(cleanProject.technologies)) cleanProject.technologies = [];
-    if (!Array.isArray(cleanProject.tags)) cleanProject.tags = [];
-    if (!Array.isArray(cleanProject.categories)) cleanProject.categories = [];
-    if (!Array.isArray(cleanProject.images)) cleanProject.images = [];
-    if (!Array.isArray(cleanProject.videos)) cleanProject.videos = [];
-
-    return cleanProject;
-  });
-
-  const updatedProjects: Project[] = [];
-  for (const project of cleanedProjects) {
     try {
       let response;
-      // Only PUT if id exists AND is NOT a temp id
-      const isExisting = project.id && typeof project.id === "string"
-        && project.id.length > 0
-        && !project.id.startsWith("temp-");
+      const isExisting =
+        project.id &&
+        typeof project.id === "string" &&
+        project.id.length > 0 &&
+        !project.id.startsWith("temp-");
 
       if (isExisting) {
-        try {
-          response = await api.put(`/projects/${project.id}`, project);
-        } catch (error: any) {
-          const errData = JSON.stringify(error.response?.data || "");
-          if (error.response?.status === 404 || errData.toLowerCase().includes("not found")) {
-            // It's a "new" UUID generated on the frontend — create it instead
-            response = await api.post("/projects", project);
-          } else {
-            throw error;
-          }
-        }
+        // PATCH untuk update parsial — hanya field yang dikirim yang berubah
+        response = await api.patch(`/projects/${project.id}`, payload);
       } else {
-        response = await api.post("/projects", project);
+        // POST untuk create baru
+        response = await api.post("/projects", payload);
       }
-      updatedProjects.push(response.data?.data || response.data);
+
+      const saved = response.data?.data || response.data;
+      updatedProjects.push(saved);
     } catch (err: any) {
-      
       throw err;
     }
   }
-  set("cms_projects", updatedProjects);
-  return updatedProjects;
+
+  return await getProjects();
 };
 
 // Articles - API only
 const getArticles = async (): Promise<Article[]> => {
   try {
     const response = await api.get("/articles");
-    
+
     const responseData = response.data?.data;
-    const articles = Array.isArray(responseData?.data) ? responseData.data : Array.isArray(responseData) ? responseData : [];
+    const articles = Array.isArray(responseData?.data)
+      ? responseData.data
+      : Array.isArray(responseData)
+        ? responseData
+        : [];
     return articles.map((article: any) => ({
       id: article.id || "",
       title: article.title || "",
       slug: article.slug || "",
       excerpt: article.excerpt || "",
       content: article.content || "",
-      featuredImageUrl: article.featuredImageURL || article.featured_image_url || "",
+      // Backend mengembalikan camelCase featuredImageUrl
+      featuredImageUrl:
+        article.featuredImageUrl ||
+        article.featuredImageURL ||
+        article.featured_image_url ||
+        "",
       status: article.status || "draft",
-      categories: article.categories || [],
-      tags: article.tags || [],
+      categories: Array.isArray(article.categoryModels) && article.categoryModels.length > 0
+        ? article.categoryModels
+        : Array.isArray(article.categories)
+          ? article.categories.map((c: any) => typeof c === 'string' ? { id: 0, name: c } : c)
+          : [],
+      tags: Array.isArray(article.tagModels) && article.tagModels.length > 0
+        ? article.tagModels
+        : Array.isArray(article.tags)
+          ? article.tags.map((t: any) => typeof t === 'string' ? { id: 0, name: t } : t)
+          : [],
       images: article.images || [],
       videos: article.videos || [],
       publishedAt: article.publishedAt || article.published_at,
+      // Preserve metadata termasuk translations
+      metadata: article.metadata || {},
     }));
   } catch (error) {
-    
     return [];
   }
 };
 
 const saveArticles = async (articles: Article[]) => {
-  set("cms_articles", articles);
   const token = localStorage.getItem("cms_token");
-  
   if (!token) {
-    
-    throw new Error("Authentication required. Please login again to save articles to the server.");
+    throw new Error(
+      "Authentication required. Please login again to save articles to the server.",
+    );
   }
-  const updatedArticles = [...articles];
-  for (const article of articles) {
-    try {
-      const cleanedArticle = {
-        title: article.title || "",
-        slug: article.slug || "",
-        excerpt: article.excerpt || "",
-        content: article.content || "",
-        featuredImageUrl: article.featuredImageUrl || "",
-        status: article.status || "draft",
-        categoryIdStrs: Array.isArray(article.categories)
-          ? article.categories.map((c) => {
-            if (typeof c === "object") {
-              return c.id > 0 ? String(c.id) : String(c.name);
-            }
-            return String(c);
-          })
-          : [],
-        tagIdStrs: Array.isArray(article.tags)
-          ? article.tags.map((t) => {
-            if (typeof t === "object") {
-              return t.id > 0 ? String(t.id) : String(t.name);
-            }
-            return String(t);
-          })
-          : [],
-        metadata: {
-          originalId: article.id,
-          featuredImageUrl: article.featuredImageUrl || "",
-          publishedAt: article.publishedAt || "",
-          categories: Array.isArray(article.categories)
-            ? article.categories.map((c) => ({
-              id: typeof c === "object" ? c.id : c,
-              name: typeof c === "object" ? c.name : String(c),
-              slug: typeof c === "object" ? c.slug : String(c).toLowerCase().replace(/\s+/g, "-"),
-            }))
-            : [],
-          tags: Array.isArray(article.tags)
-            ? article.tags.map((t) => ({
-              id: typeof t === "object" ? t.id : t,
-              name: typeof t === "object" ? t.name : String(t),
-              slug: typeof t === "object" ? t.slug : String(t).toLowerCase().replace(/\s+/g, "-"),
-            }))
-            : [],
-          images: Array.isArray(article.images)
-            ? article.images.map((img) => ({
-              id: img.id || "",
-              url: img.url || "",
-              caption: img.caption || "",
-              altText: img.altText || "",
-              sortOrder: img.sortOrder || 0,
-            }))
-            : [],
-          videos: Array.isArray(article.videos)
-            ? article.videos.map((vid) => ({
-              id: vid.id || "",
-              url: vid.url || "",
-              caption: vid.caption || "",
-              sortOrder: vid.sortOrder || 0,
-            }))
-            : [],
-          lastUpdated: new Date().toISOString(),
-          version: "1.0",
-          // Preserve any translations stored from the bilingual CMS editor
-          ...(article.metadata?.translations ? { translations: article.metadata.translations } : {}),
-        },
-      };
-      // Only PUT for existing articles with a real UUID (not empty, not temp-)
-      const isExistingArticle = article.id
-        && article.id.length > 10
-        && !article.id.startsWith("temp-");
 
-      let responseData;
-      if (isExistingArticle) {
+  const updatedArticles: Article[] = [];
+
+  for (const article of articles) {
+    const payload: Record<string, any> = {
+      title: article.title || "",
+      slug: article.slug || "",
+      status: article.status || "draft",
+      categoryIdStrs: Array.isArray(article.categories)
+        ? article.categories.map((c: any) =>
+          typeof c === "object"
+            ? c.id > 0
+              ? String(c.id)
+              : String(c.name)
+            : String(c),
+        )
+        : [],
+      tagIdStrs: Array.isArray(article.tags)
+        ? article.tags.map((t: any) =>
+          typeof t === "object"
+            ? t.id > 0
+              ? String(t.id)
+              : String(t.name)
+            : String(t),
+        )
+        : [],
+      metadata: {
+        ...(article.metadata || {}),
+        lastUpdated: new Date().toISOString(),
+        images: article.images || [],
+        videos: article.videos || [],
+      },
+    };
+
+    if (article.excerpt !== undefined) payload.excerpt = article.excerpt;
+    if (article.content !== undefined) payload.content = article.content;
+    if (article.featuredImageUrl !== undefined)
+      payload.featuredImageUrl = article.featuredImageUrl;
+    if (article.publishedAt !== undefined) {
+      if (article.publishedAt) {
         try {
-          const response = await api.put(`/articles/${article.id}`, cleanedArticle);
-          responseData = response.data?.data || response.data;
-        } catch (error: any) {
-          const errData = JSON.stringify(error.response?.data || "");
-          if (error.response?.status === 404 || errData.toLowerCase().includes("not found")) {
-            // It's a "new" UUID generated on the frontend — create it instead
-            const createResponse = await api.post("/articles", cleanedArticle);
-            responseData = createResponse.data?.data || createResponse.data;
-          } else {
-            throw error;
-          }
+          payload.publishAt = new Date(article.publishedAt).toISOString();
+        } catch (e) {
+          payload.publishAt = article.publishedAt;
         }
       } else {
-        const response = await api.post("/articles", cleanedArticle);
-        responseData = response.data?.data || response.data;
+        payload.publishAt = null; // or undefined based on backend requirements
       }
+    }
 
-      if (responseData) {
-        const index = updatedArticles.findIndex((a) => a.id === article.id);
-        if (index !== -1) updatedArticles[index] = responseData;
+    const isExisting =
+      article.id && article.id.length > 10 && !article.id.startsWith("temp-");
+
+    try {
+      let response;
+      if (isExisting) {
+        // PATCH → partial update, hanya field yang dikirim
+        response = await api.patch(`/articles/${article.id}`, payload);
+      } else {
+        response = await api.post("/articles", payload);
       }
+      const saved = response.data?.data || response.data;
+      updatedArticles.push(saved);
     } catch (err: any) {
       throw err;
     }
   }
-  set("cms_articles", updatedArticles);
-  return updatedArticles;
+
+  return await getArticles();
 };
 
 // Categories - API only
@@ -496,7 +554,6 @@ const getCategories = async (): Promise<Category[]> => {
     const response = await api.get("/categories");
     return response.data?.data || response.data || [];
   } catch (error) {
-    
     return [];
   }
 };
@@ -507,7 +564,6 @@ const getTags = async (): Promise<Tag[]> => {
     const response = await api.get("/tags");
     return response.data?.data || response.data || [];
   } catch (error) {
-    
     return [];
   }
 };
@@ -516,33 +572,46 @@ const getTags = async (): Promise<Tag[]> => {
 const getExperiences = async (): Promise<Experience[]> => {
   try {
     const response = await api.get("/experiences");
-    
 
     const responseData = response.data?.data;
-    const experiences = Array.isArray(responseData?.data) ? responseData.data : Array.isArray(responseData) ? responseData : [];
+    const experiences = Array.isArray(responseData?.data)
+      ? responseData.data
+      : Array.isArray(responseData)
+        ? responseData
+        : [];
 
-    return experiences.map((exp: any) => ({
-      id: exp.id || exp.ID || 0,
-      title: exp.title || exp.role || "",
-      company: exp.company || "",
-      location: exp.location || "",
-      startDate: exp.startDate || exp.start_date || "",
-      endDate: exp.endDate || exp.end_date || null,
-      current: exp.current || false,
-      description: exp.description || "",
-      responsibilities: Array.isArray(exp.responsibilities) ? exp.responsibilities : [],
-      technologies: Array.isArray(exp.technologies) ? exp.technologies : [],
-      companyUrl: exp.companyUrl || exp.company_url || "",
-      logoUrl: exp.logoUrl || exp.logo_url || "",
-      metadata: exp.metadata || {},
-      createdAt: exp.createdAt || exp.created_at || new Date().toISOString(),
-      updatedAt: exp.updatedAt || exp.updated_at || new Date().toISOString(),
-      // Legacy compat
-      role: exp.title || exp.role || "",
-      period: exp.period || `${exp.startDate || ""} - ${exp.endDate || (exp.current ? "Present" : "")}`,
-    }));
+    return experiences.map((exp: any) => {
+      // Technologies dari backend adalah array of {id, name, slug}
+      // Kita preserve sebagai array of objects untuk mapping yang benar saat save
+      const techRaw = Array.isArray(exp.technologies) ? exp.technologies : [];
+
+      return {
+        id: exp.id || exp.ID || 0,
+        title: exp.title || exp.role || "",
+        company: exp.company || "",
+        location: exp.location || "",
+        startDate: exp.startDate || exp.start_date || "",
+        endDate: exp.endDate || exp.end_date || null,
+        current: exp.current || false,
+        description: exp.description || "",
+        responsibilities: Array.isArray(exp.responsibilities)
+          ? exp.responsibilities
+          : [],
+        // Preserve sebagai objects agar ID bisa dipakai saat save
+        technologies: techRaw,
+        companyUrl: exp.companyUrl || exp.company_url || "",
+        logoUrl: exp.logoUrl || exp.logo_url || "",
+        metadata: exp.metadata || {},
+        createdAt: exp.createdAt || exp.created_at || new Date().toISOString(),
+        updatedAt: exp.updatedAt || exp.updated_at || new Date().toISOString(),
+        // Legacy compat
+        role: exp.title || exp.role || "",
+        period:
+          exp.period ||
+          `${exp.startDate || ""} - ${exp.endDate || (exp.current ? "Present" : "")}`,
+      };
+    });
   } catch (error) {
-    
     return [];
   }
 };
@@ -553,16 +622,15 @@ const saveExperiences = async (experiences: any[]): Promise<any[]> => {
     throw new Error("Authentication required. Please login again.");
   }
 
-  const updatedExperiences = [...experiences];
+  const updatedExperiences: any[] = [];
 
   for (const experience of experiences) {
     try {
-      // Support both ExperiencesEditor shape (title, location, startDate, current...)
-      // and legacy shape (role, period, ...)
-      // Resolve technology IDs where possible (avoids re-creating tags)
       const techIds: number[] = Array.isArray(experience.technologies)
         ? experience.technologies
-          .map((t: any) => (typeof t === "object" && t?.id > 0 ? Number(t.id) : 0))
+          .map((t: any) =>
+            typeof t === "object" && t?.id > 0 ? Number(t.id) : 0,
+          )
           .filter((id: number) => id > 0)
         : [];
 
@@ -572,91 +640,100 @@ const saveExperiences = async (experiences: any[]): Promise<any[]> => {
           .filter(Boolean)
         : [];
 
-      // Ensure startDate is always a valid YYYY-MM-DD string
-      const rawStartDate = experience.startDate || experience.period?.split(" - ")[0] || "";
-      const startDate = rawStartDate.length >= 10
-        ? rawStartDate.substring(0, 10)   // trim time part if any
-        : rawStartDate;
+      const rawStartDate =
+        experience.startDate || experience.period?.split(" - ")[0] || "";
+      const startDate =
+        rawStartDate.length === 7
+          ? `${rawStartDate}-01`
+          : rawStartDate.length >= 10
+            ? rawStartDate.substring(0, 10)
+            : rawStartDate;
 
       const rawEndDate = experience.current
         ? ""
-        : (experience.endDate || (
-          experience.period && experience.period.split(" - ")[1] !== "Present"
-            ? experience.period.split(" - ")[1]
-            : ""
-        ) || "");
-      const endDate = rawEndDate.length >= 10 ? rawEndDate.substring(0, 10) : rawEndDate;
+        : experience.endDate ||
+        (experience.period && experience.period.split(" - ")[1] !== "Present"
+          ? experience.period.split(" - ")[1]
+          : "") ||
+        "";
+      const endDate =
+        rawEndDate.length === 7
+          ? `${rawEndDate}-01`
+          : rawEndDate.length >= 10
+            ? rawEndDate.substring(0, 10)
+            : rawEndDate;
 
-      const cleanExperience = {
+      const payload: Record<string, any> = {
         title: experience.title || experience.role || "",
         company: experience.company || "",
         location: experience.location || "",
-        description: experience.description || "",
-        startDate,
-        endDate,
-        current: experience.current ?? (experience.period?.includes("Present") || false),
-        responsibilities: Array.isArray(experience.responsibilities)
-          ? experience.responsibilities.filter(Boolean)
-          : [],
-        // Prefer IDs (more reliable), fall back to names
-        technologyIds: techIds.length > 0 ? techIds : [],
-        technologyNames: techIds.length === 0 ? techNames : [],
-        companyUrl: experience.companyUrl || "",
-        logoUrl: experience.logoUrl || "",
-        metadata: experience.metadata || {},
+        current:
+          experience.current ??
+          (experience.period?.includes("Present") || false),
       };
 
-      let responseData;
-      if (experience.id && experience.id > 0) {
-        try {
-          const response = await api.put(`/experiences/${experience.id}`, cleanExperience);
-          responseData = response.data?.data || response.data;
-        } catch (error: any) {
-          const errData = JSON.stringify(error.response?.data || "");
-          if (error.response?.status === 404 || errData.toLowerCase().includes("not found")) {
-            const response = await api.post("/experiences", cleanExperience);
-            responseData = response.data?.data || response.data;
-          } else {
-            throw error;
-          }
-        }
+      if (experience.description !== undefined)
+        payload.description = experience.description;
+      if (startDate !== "") payload.startDate = startDate;
+      if (endDate !== "") payload.endDate = endDate;
+      if (experience.responsibilities !== undefined) {
+        payload.responsibilities = Array.isArray(experience.responsibilities)
+          ? experience.responsibilities.filter(Boolean)
+          : [];
+      }
+      payload.technologyIds = techIds;
+      payload.technologyNames = techNames;
+      if (experience.companyUrl !== undefined)
+        payload.companyUrl = experience.companyUrl;
+      if (experience.logoUrl !== undefined)
+        payload.logoUrl = experience.logoUrl;
+      if (experience.metadata !== undefined)
+        payload.metadata = experience.metadata;
+
+      const isExisting =
+        experience.id &&
+        experience.id > 0 &&
+        String(experience.id) !== "0" &&
+        !String(experience.id).startsWith("temp-");
+
+      let response;
+      if (isExisting) {
+        // Use PATCH for partial updates
+        response = await api.patch(`/experiences/${experience.id}`, payload);
       } else {
-        const response = await api.post("/experiences", cleanExperience);
-        responseData = response.data?.data || response.data;
+        response = await api.post("/experiences", payload);
       }
 
-      if (responseData) {
-        const index = updatedExperiences.findIndex((e) => e.id === experience.id);
-        if (index !== -1) {
-          updatedExperiences[index] = responseData;
-        }
-      }
+      const saved = response.data?.data || response.data;
+      updatedExperiences.push(saved);
     } catch (err: any) {
-      
       throw err;
     }
   }
 
-  return updatedExperiences;
+  return await getExperiences();
 };
 
 // Categories CRUD
-const createCategory = async (categoryData: Partial<Category>): Promise<Category> => {
+const createCategory = async (
+  categoryData: Partial<Category>,
+): Promise<Category> => {
   try {
     const response = await api.post("/categories", categoryData);
     return response.data?.data || response.data;
   } catch (error) {
-    
     throw error;
   }
 };
 
-const updateCategory = async (id: number, categoryData: Partial<Category>): Promise<Category> => {
+const updateCategory = async (
+  id: number,
+  categoryData: Partial<Category>,
+): Promise<Category> => {
   try {
     const response = await api.put(`/categories/${id}`, categoryData);
     return response.data?.data || response.data;
   } catch (error) {
-    
     throw error;
   }
 };
@@ -665,7 +742,6 @@ const deleteCategory = async (id: number): Promise<void> => {
   try {
     await api.delete(`/categories/${id}`);
   } catch (error) {
-    
     throw error;
   }
 };
@@ -676,7 +752,6 @@ const createTag = async (tagData: Partial<Tag>): Promise<Tag> => {
     const response = await api.post("/tags", tagData);
     return response.data?.data || response.data;
   } catch (error) {
-    
     throw error;
   }
 };
@@ -686,7 +761,6 @@ const updateTag = async (id: number, tagData: Partial<Tag>): Promise<Tag> => {
     const response = await api.put(`/tags/${id}`, tagData);
     return response.data?.data || response.data;
   } catch (error) {
-    
     throw error;
   }
 };
@@ -695,7 +769,6 @@ const deleteTag = async (id: number): Promise<void> => {
   try {
     await api.delete(`/tags/${id}`);
   } catch (error) {
-    
     throw error;
   }
 };
@@ -705,7 +778,6 @@ export const deleteProject = async (id: string): Promise<void> => {
     try {
       await api.delete(`/projects/${id}`);
     } catch (error) {
-      
       throw error;
     }
   }
@@ -716,7 +788,6 @@ export const deleteArticle = async (id: string): Promise<void> => {
     try {
       await api.delete(`/articles/${id}`);
     } catch (error) {
-      
       throw error;
     }
   }
@@ -727,7 +798,6 @@ export const deleteExperience = async (id: number): Promise<void> => {
     try {
       await api.delete(`/experiences/${id}`);
     } catch (error) {
-      
       throw error;
     }
   }
@@ -757,4 +827,21 @@ export const ContentStore = {
 };
 
 // Also export individual functions for direct imports
-export { getProfile, saveProfile, getProjects, saveProjects, getArticles, saveArticles, getExperiences, saveExperiences, getCategories, createCategory, updateCategory, deleteCategory, getTags, createTag, updateTag, deleteTag };
+export {
+  getProfile,
+  saveProfile,
+  getProjects,
+  saveProjects,
+  getArticles,
+  saveArticles,
+  getExperiences,
+  saveExperiences,
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getTags,
+  createTag,
+  updateTag,
+  deleteTag,
+};
