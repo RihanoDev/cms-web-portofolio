@@ -35,34 +35,64 @@ function decodeBase64Utf8(base64: string): string {
     }
     return new TextDecoder().decode(bytes);
   } catch (e) {
-    return base64; // Fallback to raw string if not valid base64
+    return base64;
   }
+}
+
+/** Coba decode Base64 sampai 3 level sampai dapat JSON yang valid */
+function tryDecodeResponse(raw: string): any {
+  let current = raw;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const decoded = decodeBase64Utf8(current);
+      return JSON.parse(decoded); // sukses!
+    } catch {
+      // masih bukan JSON, decode satu level lagi
+      try {
+        current = decodeBase64Utf8(current);
+      } catch {
+        break; // tidak bisa decode lagi
+      }
+    }
+  }
+  return raw; // kembalikan raw jika semua gagal
 }
 
 // Response interceptor for handling common errors and response decoding
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Decode if backend sends encoded payload
-    if (response.headers["x-encoded-response"] === "true" && typeof response.data === "string") {
-      try {
-        const decoded = decodeBase64Utf8(response.data);
-        response.data = JSON.parse(decoded);
-      } catch (e) {
-        // failed to decode, keep raw or handle error
-      }
+    const isExplicitlyEncoded = response.headers["x-encoded-response"] === "true";
+    const looksLikeBase64 =
+      typeof response.data === "string" &&
+      response.data.length > 20 &&
+      /^[A-Za-z0-9+/]+=*$/.test(response.data.trim());
+
+    if ((isExplicitlyEncoded || looksLikeBase64) && typeof response.data === "string") {
+      const parsed = tryDecodeResponse(response.data);
+      response.data = parsed;
     }
+
+    // Jika backend mengembalikan { success: false } tapi HTTP 200
+    // (terjadi karena WriteHeaderNow override di middleware Go)
+    // konversi ke rejection supaya error handler berjalan normal
+    const d = response.data;
+    if (d && typeof d === "object" && d.success === false) {
+      const msg = d.message || d.error || "Request failed";
+      const err: any = new Error(msg);
+      err.response = response;
+      err.response.status = 400; // tandai sebagai error
+      return Promise.reject(err);
+    }
+
     return response;
   },
   (error) => {
-
-
-    // Handle auth errors globally
-    if (error.response && error.response.status === 401) {
-
-      // We could redirect to login page here if needed
-      // window.location.href = '/login';
+    // Decode body error agar pesan bisa dibaca
+    if (error.response && typeof error.response.data === "string") {
+      try {
+        error.response.data = tryDecodeResponse(error.response.data);
+      } catch { /* biarkan */ }
     }
-
     return Promise.reject(error);
   },
 );
@@ -128,6 +158,19 @@ export const api = {
         throw authError;
       }
 
+      const enhancedError = new Error(errorMessage) as any;
+      enhancedError.response = error.response;
+      throw enhancedError;
+    }
+  },
+
+  async patch(path: string, body?: any, config?: AxiosRequestConfig) {
+    try {
+      const response: AxiosResponse = await axiosInstance.patch(path, body, config);
+      return response;
+    } catch (error: any) {
+      const errorData = error.response?.data || {};
+      const errorMessage = errorData.error || errorData.message || error.message;
       const enhancedError = new Error(errorMessage) as any;
       enhancedError.response = error.response;
       throw enhancedError;

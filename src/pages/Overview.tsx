@@ -10,31 +10,29 @@ type Stats = { total: number; today: number; week: number; month: number; unique
 
 const StatCard = ({ title, value, subtitle, change, icon }: { title: string; value: number | string; subtitle?: string; change?: { value: number; positive: boolean }; icon: React.ReactNode }) => {
   const changeColor = change?.positive ? "text-green-400" : "text-red-400";
-
   return (
-    <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700/50">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-slate-400 text-sm font-medium mb-1">{title}</h3>
-          <div className="text-2xl font-bold text-white">{value}</div>
-          {subtitle && <p className="text-slate-400 text-xs mt-1">{subtitle}</p>}
-
+    <div className="bg-slate-800 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-700/50">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-slate-400 text-xs sm:text-sm font-medium mb-1 truncate">{title}</h3>
+          <div className="text-xl sm:text-2xl font-bold text-white">{value}</div>
+          {subtitle && <p className="text-slate-400 text-xs mt-1 truncate">{subtitle}</p>}
           {change && (
-            <div className={`flex items-center mt-2 text-sm ${changeColor}`}>
+            <div className={`flex items-center mt-2 text-xs sm:text-sm ${changeColor}`}>
               {change.positive ? (
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               ) : (
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path>
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
                 </svg>
               )}
               <span>{Math.abs(change.value)}%</span>
             </div>
           )}
         </div>
-        <div className="p-3 bg-blue-500/10 rounded-lg">{icon}</div>
+        <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg flex-shrink-0">{icon}</div>
       </div>
     </div>
   );
@@ -59,7 +57,18 @@ export default function Overview() {
     const load = async () => {
       try {
         setLoading(true);
-        const [ovr, hm, ts, projs, arts, exps, top] = await Promise.all([
+
+        // Helper: ekstrak array dari berbagai bentuk response (handle nested pagination)
+        const extractArray = (res: any): any[] => {
+          if (!res) return [];
+          const d = res?.data?.data ?? res?.data ?? res;
+          if (Array.isArray(d)) return d;
+          if (d && Array.isArray(d.data)) return d.data;
+          return [];
+        };
+
+        // allSettled: endpoint analytics yang gagal tidak crash seluruh halaman
+        const results = await Promise.allSettled([
           api.get("/analytics/views"),
           api.get("/analytics/views?page=/"),
           api.get("/analytics/series?interval=day"),
@@ -68,17 +77,32 @@ export default function Overview() {
           getExperiences(),
           api.get("/analytics/top-pages?limit=5")
         ]);
-        setOverall(ovr.data?.data || ovr.data);
-        setHome(hm.data?.data || hm.data);
-        setSeries((ts.data?.data || ts.data || []).slice(-30));
-        setTopPages(top.data?.data || top.data || []);
+
+        const [ovrR, hmR, tsR, projsR, artsR, expsR, topR] = results;
+
+        // Ambil nilai settled result tanpa generic (aman di .tsx)
+        const getVal = (r: PromiseSettledResult<any>) =>
+          r.status === "fulfilled" ? r.value : null;
+
+        const ovr = getVal(ovrR);
+        const hm = getVal(hmR);
+        const ts = getVal(tsR);
+        const top = getVal(topR);
+        const projs = getVal(projsR);
+        const arts = getVal(artsR);
+        const exps = getVal(expsR);
+
+        setOverall((ovr as any)?.data?.data || (ovr as any)?.data || null);
+        setHome((hm as any)?.data?.data || (hm as any)?.data || null);
+        setSeries(extractArray(ts).slice(-30));
+        setTopPages(extractArray(top));
         setCounts({
-          projects: projs.length,
-          articles: arts.length,
-          experiences: exps.length
+          projects: Array.isArray(projs) ? projs.length : 0,
+          articles: Array.isArray(arts) ? arts.length : 0,
+          experiences: Array.isArray(exps) ? exps.length : 0,
         });
       } catch (e) {
-        
+        // silently handle
       } finally {
         setLoading(false);
       }
@@ -169,7 +193,7 @@ export default function Overview() {
   return (
     <div>
       <Section title="Content Summary">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           <StatCard
             title="Total Projects"
             value={counts.projects}
@@ -204,7 +228,7 @@ export default function Overview() {
       </Section>
 
       <Section title="Analytics Overview">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <StatCard
             title="Total Page Views"
             value={overall?.total || 0}
@@ -256,14 +280,14 @@ export default function Overview() {
       </Section>
 
       <Section title="Traffic Insights">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="lg:col-span-2">
-            <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700/50 h-full">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-white font-medium">Views Trend</h3>
+            <div className="bg-slate-800 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-700/50">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-medium text-sm sm:text-base">Views Trend</h3>
                 <div className="bg-slate-700/50 text-slate-300 text-xs py-1 px-2 rounded">Last 30 Days</div>
               </div>
-              <div className="h-80">
+              <div className="h-52 sm:h-72 lg:h-80">
                 <Line data={chartData} options={chartOptions} />
               </div>
             </div>
