@@ -15,18 +15,19 @@ axiosInstance.interceptors.request.use(
     if (token) {
       const cleanToken = token.trim().replace(/^["']|["']$/g, "");
       config.headers.Authorization = `Bearer ${cleanToken}`;
-      
+
     }
     return config;
   },
   (error) => {
-    
+
     return Promise.reject(error);
   },
 );
 
 function decodeBase64Utf8(base64: string): string {
   try {
+    if (typeof window === "undefined" || !window.atob) return base64;
     const binaryString = window.atob(base64);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
@@ -53,11 +54,11 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
-    
+
 
     // Handle auth errors globally
     if (error.response && error.response.status === 401) {
-      
+
       // We could redirect to login page here if needed
       // window.location.href = '/login';
     }
@@ -68,14 +69,14 @@ axiosInstance.interceptors.response.use(
 
 export const api = {
   async get(path: string, config?: AxiosRequestConfig) {
-    
+
     try {
       const response: AxiosResponse = await axiosInstance.get(path, config);
-      
-      
+
+
       return response;
     } catch (error: any) {
-      
+
 
       // Return more detailed error info
       const errorData = error.response?.data || {};
@@ -88,14 +89,14 @@ export const api = {
   },
 
   async post(path: string, body?: any, config?: AxiosRequestConfig) {
-    
+
     try {
       const response: AxiosResponse = await axiosInstance.post(path, body, config);
-      
-      
+
+
       return response;
     } catch (error: any) {
-      
+
 
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
@@ -107,14 +108,14 @@ export const api = {
   },
 
   async put(path: string, body?: any, config?: AxiosRequestConfig) {
-    
+
     try {
       const response: AxiosResponse = await axiosInstance.put(path, body, config);
-      
-      
+
+
       return response;
     } catch (error: any) {
-      
+
 
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
@@ -134,13 +135,13 @@ export const api = {
   },
 
   async delete(path: string, config?: AxiosRequestConfig) {
-    
+
     try {
       const response: AxiosResponse = await axiosInstance.delete(path, config);
-      
+
       return response;
     } catch (error: any) {
-      
+
 
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
@@ -152,7 +153,7 @@ export const api = {
   },
 
   async upload(path: string, formData: FormData, config?: AxiosRequestConfig) {
-    
+
     try {
       const uploadConfig = {
         ...config,
@@ -163,11 +164,11 @@ export const api = {
       };
 
       const response: AxiosResponse = await axiosInstance.post(path, formData, uploadConfig);
-      
-      
+
+
       return response;
     } catch (error: any) {
-      
+
 
       const errorData = error.response?.data || {};
       const errorMessage = errorData.error || errorData.message || error.message;
