@@ -103,6 +103,7 @@ interface MediaUploaderProps {
   onUpdate: (index: number, image: { url: string; caption?: string; altText?: string }) => void;
   onRemove: (index: number) => void;
   folder?: string;
+  oldFileUrl?: string;
 }
 
 const MediaUploader: React.FC<MediaUploaderProps> = ({
@@ -111,6 +112,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
   onUpdate,
   onRemove,
   folder,
+  oldFileUrl,
 }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -132,7 +134,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
 
     try {
       // Upload to server
-      const result = await uploadMedia(file, folder);
+      const result = await uploadMedia(file, folder, oldFileUrl);
 
       const newImage = {
         url: result.fileUrl,

@@ -31,11 +31,14 @@ export interface UploadResult {
  * Upload a file to the backend server
  * Returns the accessible URL and metadata of the uploaded file
  */
-export const uploadMedia = async (file: File, folder?: string): Promise<UploadResult> => {
+export const uploadMedia = async (file: File, folder?: string, oldFileUrl?: string): Promise<UploadResult> => {
   const formData = new FormData();
   formData.append("file", file);
   if (folder) {
     formData.append("folder", folder);
+  }
+  if (oldFileUrl) {
+    formData.append("oldFileUrl", oldFileUrl);
   }
 
   const response = await api.upload("/media/upload", formData);
@@ -58,7 +61,7 @@ export const uploadMedia = async (file: File, folder?: string): Promise<UploadRe
     }
   } catch (e) {
     // Non-fatal: if normalization fails, just return original URL
-    
+
   }
 
   return data as UploadResult;
@@ -73,7 +76,7 @@ export const getMedia = async (): Promise<MediaItem[]> => {
     const data = response.data?.data;
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    
+
     return [];
   }
 };

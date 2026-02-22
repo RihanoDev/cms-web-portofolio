@@ -12,9 +12,12 @@ body {
 
 p {
   text-align: justify;
+  text-justify: inter-word;
+  overflow-wrap: break-word;
   word-wrap: break-word;
-  word-break: break-word;
+  word-break: normal;
   hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 /* Modal animations */
