@@ -297,10 +297,16 @@ const getProjects = async (): Promise<Project[]> => {
         categoryId:
           project.categoryId || project.categoryID || project.category_id,
         category: project.category || null,
-        categories: Array.isArray(project.categories) && project.categories.length > 0
-          ? project.categories
-          : (project.categoryId ? [{ id: project.categoryId, name: project.category || "Selected" }] : []),
-        tags: Array.isArray(project.tags) ? project.tags : [],
+        categories: Array.isArray(project.categoryModels) && project.categoryModels.length > 0
+          ? project.categoryModels
+          : Array.isArray(project.categories) && project.categories.length > 0 && typeof project.categories[0] === 'object'
+            ? project.categories
+            : (project.categoryId ? [{ id: project.categoryId, name: project.category || "Selected" }] : []),
+        tags: Array.isArray(project.tagModels) && project.tagModels.length > 0
+          ? project.tagModels
+          : Array.isArray(project.tags) && project.tags.length > 0 && typeof project.tags[0] === 'object'
+            ? project.tags
+            : [],
         link: project.liveDemoUrl || project.demoUrl || project.link || "",
         githubUrl:
           project.githubUrl || project.githubURL || project.github_url || "",
@@ -336,21 +342,29 @@ const saveProjects = async (projects: Project[]) => {
   const updatedProjects: Project[] = [];
 
   for (const project of projects) {
-    const allTechNames = new Set<string>();
+    // Separate Technologies (used for the stack)
+    const techIds: number[] = [];
+    const techNames: string[] = [];
     if (Array.isArray(project.technologies)) {
       project.technologies.forEach((t: any) => {
-        if (typeof t === "string") allTechNames.add(t);
-        else if (t?.name) allTechNames.add(t.name);
+        if (typeof t === "number") techIds.push(t);
+        else if (typeof t === "string") techNames.push(t);
+        else if (t?.id) techIds.push(Number(t.id));
+        else if (t?.name) techNames.push(t.name);
       });
     }
-    const techIds: number[] = [];
+
+    // Separate Tags (general labels)
+    const tagIds: number[] = [];
+    const tagNames: string[] = [];
     if (Array.isArray(project.tags)) {
       project.tags.forEach((t: any) => {
-        if (t?.id && t.id > 0) techIds.push(Number(t.id));
-        else if (t?.name) allTechNames.add(t.name);
+        if (typeof t === "number") tagIds.push(t);
+        else if (typeof t === "string") tagNames.push(t);
+        else if (t?.id && t.id > 0) tagIds.push(Number(t.id));
+        else if (t?.name) tagNames.push(t.name);
       });
     }
-    const techNames: string[] = Array.from(allTechNames);
 
     // Pastikan title & slug selalu ada
     const title = project.title?.trim() || "Untitled Project";
@@ -367,6 +381,7 @@ const saveProjects = async (projects: Project[]) => {
       slug,
       status: project.status || "draft",
     };
+
     if (project.description !== undefined)
       payload.description = project.description;
     if (project.content !== undefined) payload.content = project.content;
@@ -376,7 +391,7 @@ const saveProjects = async (projects: Project[]) => {
     )
       payload.thumbnailUrl =
         project.thumbnailUrl || project.featuredImageUrl || "";
-    if (project.categories && project.categories.length > 0) {
+    if (project.categories) {
       payload.categoryIdStrs = project.categories.map((c: any) =>
         typeof c === "object"
           ? c.id > 0
@@ -397,9 +412,23 @@ const saveProjects = async (projects: Project[]) => {
         project.liveDemoUrl || project.demoUrl || project.link || "";
     }
 
-    // Always include technologies payload for backend parsing
+    // Send both independently
     payload.technologies = techIds;
     payload.technologyNames = techNames;
+    payload.tags = tagIds;
+    payload.tagNames = tagNames;
+
+    // Add tagIdStrs payload matching Articles
+    payload.tagIdStrs = Array.isArray(project.tags)
+      ? project.tags.map((t: any) =>
+        typeof t === "object"
+          ? t.id > 0
+            ? String(t.id)
+            : String(t.name)
+          : String(t),
+      )
+      : [];
+
     const finalMetadata = project.metadata ? { ...project.metadata } : {};
     if (project.images !== undefined) finalMetadata.images = project.images;
     if (project.videos !== undefined) finalMetadata.videos = project.videos;
