@@ -149,7 +149,9 @@ export default function ProjectsEditor() {
     setSavingIndex(index);
     setError(null);
     try {
-      const [saved] = await ContentStore.saveProjects([project]);
+      const allSaved = await ContentStore.saveProjects([project]);
+      const isExisting = project.id && !project.id.startsWith("temp-");
+      const saved = allSaved.find(p => isExisting ? String(p.id) === String(project.id) : p.slug === project.slug) || allSaved[0];
       // Replace temp project with the real one returned from API
       setProjects(prev => prev.map((p, i) => i === index ? { ...saved } : p));
 

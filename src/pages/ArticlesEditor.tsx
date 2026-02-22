@@ -138,7 +138,9 @@ export default function ArticlesEditor() {
     setSavingIndex(index);
     setError(null);
     try {
-      const [saved] = await ContentStore.saveArticles([article]);
+      const allSaved = await ContentStore.saveArticles([article]);
+      const isExisting = article.id && !article.id.startsWith("temp-");
+      const saved = allSaved.find(a => isExisting ? String(a.id) === String(article.id) : a.slug === article.slug) || allSaved[0];
       setArticles(prev => prev.map((a, i) => i === index ? { ...saved } : a));
 
       // Refresh categories and tags because new ones might have been created
