@@ -10,84 +10,85 @@ interface VideoInputProps {
 
 const getVideoEmbedUrl = (url: string): string | null => {
   if (!url || typeof url !== 'string') {
-    
+
     return null;
   }
 
   try {
     // Clean up the URL first
     const cleanUrl = url.trim();
-    
-    
+
+
     // Handle direct embed URLs - just return as is
     if (cleanUrl.includes('youtube.com/embed/') || cleanUrl.includes('player.vimeo.com/video/')) {
-      
+
       return cleanUrl;
     }
-    
+
     // Simple YouTube URL detection with manual ID extraction
-    // This is more reliable than regex for many URL formats
-    if (cleanUrl.includes('youtube.com/watch') || cleanUrl.includes('youtu.be/')) {
-      
-      
+    if (cleanUrl.includes('youtube.com/') || cleanUrl.includes('youtu.be/')) {
       let videoId = '';
-      
+
       // Handle youtube.com/watch?v=ID format
       if (cleanUrl.includes('youtube.com/watch')) {
         const urlObj = new URL(cleanUrl);
         videoId = urlObj.searchParams.get('v') || '';
-      } 
+      }
+      // Handle youtube.com/shorts/ID format
+      else if (cleanUrl.includes('youtube.com/shorts/')) {
+        const parts = cleanUrl.split('youtube.com/shorts/');
+        if (parts.length > 1) {
+          videoId = parts[1].split(/[?#]/)[0];
+        }
+      }
       // Handle youtu.be/ID format
       else if (cleanUrl.includes('youtu.be/')) {
         const parts = cleanUrl.split('youtu.be/');
         if (parts.length > 1) {
-          videoId = parts[1].split('?')[0].split('&')[0].split('#')[0];
+          videoId = parts[1].split(/[?#]/)[0];
         }
       }
-      
+
       if (videoId) {
-        
-        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        
-        return embedUrl;
+        return `https://www.youtube.com/embed/${videoId}`;
       }
     }
-    
+
     // Vimeo simple detection
     if (cleanUrl.includes('vimeo.com')) {
-      
-      
+
+
       // Extract the ID using a simpler approach
       const vimeoId = cleanUrl.split('vimeo.com/')[1];
       if (vimeoId) {
         // Clean up the ID by removing anything after ? or # or /
         const cleanId = vimeoId.split(/[?#/]/)[0];
         if (cleanId && /^\d+$/.test(cleanId)) {
-          
+
           const embedUrl = `https://player.vimeo.com/video/${cleanId}`;
-          
+
           return embedUrl;
         }
       }
     }
-    
+
     // Direct URL check - sometimes users might paste the full iframe embed code or a direct player URL
     // This tries to extract it from common patterns
     const directUrlMatch = cleanUrl.match(/src=["'](.+?)["']/i);
     if (directUrlMatch && directUrlMatch[1]) {
       const extractedUrl = directUrlMatch[1];
-      
-      
+
+
       // Verify it's a valid embed URL
       if (extractedUrl.includes('youtube.com/embed/') || extractedUrl.includes('player.vimeo.com/video/')) {
         return extractedUrl;
       }
     }
-    
-    
+
+
     return null;
   } catch (error) {
-    
+
     return null;
   }
 };
@@ -102,12 +103,12 @@ const VideoInput: React.FC<VideoInputProps> = ({
   const [inputValue, setInputValue] = useState(value);
   const [previewUrl, setPreviewUrl] = useState<string | null>(value ? getVideoEmbedUrl(value) : null);
   const [error, setError] = useState<string | null>(null);
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
     setError(null);
-    
+
     // Auto-update the main value if there's already a preview
     if (previewUrl) {
       onChange(newValue);
@@ -115,76 +116,81 @@ const VideoInput: React.FC<VideoInputProps> = ({
       setPreviewUrl(newEmbedUrl);
     }
   };
-  
+
   // Special function for extracting YouTube video ID
   const extractYouTubeVideoId = (url: string): string | null => {
     try {
-      // First try URL object approach
-      if (url.includes('youtube.com')) {
-        const urlObj = new URL(url);
+      if (!url) return null;
+      const cleanUrl = url.trim();
+
+      // Handle youtube.com/watch?v=ID
+      if (cleanUrl.includes('youtube.com/watch')) {
+        const urlObj = new URL(cleanUrl);
         return urlObj.searchParams.get('v');
-      } 
-      // Handle youtu.be short links
-      else if (url.includes('youtu.be/')) {
-        const parts = url.split('youtu.be/');
-        if (parts.length > 1) {
-          return parts[1].split('?')[0].split('&')[0];
-        }
+      }
+      // Handle youtube.com/shorts/ID
+      else if (cleanUrl.includes('youtube.com/shorts/')) {
+        const parts = cleanUrl.split('youtube.com/shorts/');
+        return parts.length > 1 ? parts[1].split(/[?#]/)[0] : null;
+      }
+      // Handle youtu.be/ID
+      else if (cleanUrl.includes('youtu.be/')) {
+        const parts = cleanUrl.split('youtu.be/');
+        return parts.length > 1 ? parts[1].split(/[?#]/)[0] : null;
       }
       return null;
     } catch (err) {
-      
       return null;
     }
   };
-  
+
   const handleGenerate = () => {
-    
+
     setError(null);
-    
+
     // Try standard processing first
     const embedUrl = getVideoEmbedUrl(inputValue);
-    
-    
+
+
     if (embedUrl) {
       setPreviewUrl(embedUrl);
       onChange(inputValue);
       if (onSubmit) onSubmit();
       return;
     }
-    
+
     // If standard processing fails, try a more direct approach for YouTube
     if (inputValue.includes('youtube.com/watch?v=') || inputValue.includes('youtu.be/')) {
       try {
-        
+
         const videoId = extractYouTubeVideoId(inputValue);
-        
-        
+
+
         if (videoId) {
           const fallbackEmbedUrl = `https://www.youtube.com/embed/${videoId}`;
-          
+
           setPreviewUrl(fallbackEmbedUrl);
           onChange(inputValue);
           if (onSubmit) onSubmit();
           return;
         }
       } catch (err) {
-        
+
         setError('Could not extract video ID from YouTube URL');
       }
     }
-    
+
     // If we got here, we couldn't process the video URL
     setError('Could not generate embed URL from this video link. Please use a direct YouTube or Vimeo URL.');
     setPreviewUrl(null);
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleGenerate();
     }
   };
-  
+
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
@@ -204,14 +210,14 @@ const VideoInput: React.FC<VideoInputProps> = ({
           Preview
         </button>
       </div>
-      
+
       {error && (
         <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-3 py-2 rounded text-sm">
           <div className="font-medium">Error</div>
           <div>{error}</div>
         </div>
       )}
-      
+
       {onCaptionChange && (
         <div>
           <label htmlFor="video-caption" className="block text-xs font-medium text-slate-400 mb-1">
@@ -227,7 +233,7 @@ const VideoInput: React.FC<VideoInputProps> = ({
           />
         </div>
       )}
-      
+
       {previewUrl ? (
         <div className="border border-slate-700 rounded-lg overflow-hidden bg-black/30">
           <div className="relative pb-[56.25%] h-0">
@@ -243,22 +249,22 @@ const VideoInput: React.FC<VideoInputProps> = ({
       ) : (
         <div className="border border-slate-700 rounded-lg bg-slate-800/50 flex items-center justify-center h-64">
           <div className="text-center text-slate-400">
-            <svg 
-              className="w-12 h-12 mx-auto mb-3" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className="w-12 h-12 mx-auto mb-3"
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth="1.5" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
                 d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
               />
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth="1.5" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
                 d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
@@ -283,13 +289,13 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   onRemove,
   onCaptionChange,
 }) => {
-  
-  
+
+
   // Use state for managing UI
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  
+
   // Extract YouTube video ID directly
   const extractYouTubeVideoId = (videoUrl: string): string | null => {
     try {
@@ -304,24 +310,24 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       }
       return null;
     } catch (err) {
-      
+
       return null;
     }
   };
-  
+
   // Process URL on component mount or when URL changes
   useEffect(() => {
     try {
       // First try standard method
       const result = getVideoEmbedUrl(url);
-      
+
       if (result) {
         setEmbedUrl(result);
         setError(null);
-        
+
         return;
       }
-      
+
       // If standard method fails, try direct YouTube ID extraction
       if (url.includes('youtube.com') || url.includes('youtu.be')) {
         const videoId = extractYouTubeVideoId(url);
@@ -329,21 +335,21 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           const youtubeEmbedUrl = `https://www.youtube.com/embed/${videoId}`;
           setEmbedUrl(youtubeEmbedUrl);
           setError(null);
-          
+
           return;
         }
       }
-      
+
       // If we got here, we couldn't process the URL
       setError('Could not generate embed URL from the provided video link');
       setEmbedUrl(null);
     } catch (err) {
-      
+
       setError('Error processing video URL');
       setEmbedUrl(null);
     }
   }, [url]);
-  
+
   return (
     <div className="relative group border border-slate-700 rounded-lg overflow-hidden bg-slate-800">
       <div className="relative pb-[56.25%] h-0 bg-black">
@@ -358,16 +364,16 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-slate-400">
             <div className="text-center">
-              <svg 
-                className="w-12 h-12 mx-auto mb-2" 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className="w-12 h-12 mx-auto mb-2"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth="1.5" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
@@ -378,7 +384,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           </div>
         )}
       </div>
-      
+
       {/* Hover overlay with actions */}
       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
         <div className="flex justify-end">
@@ -392,7 +398,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             </svg>
           </button>
         </div>
-        
+
         <div className="flex justify-center">
           <button
             onClick={() => setShowDetails(!showDetails)}
@@ -402,7 +408,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           </button>
         </div>
       </div>
-      
+
       {/* Caption section */}
       {showDetails && onCaptionChange && (
         <div className="p-3 border-t border-slate-700">
@@ -419,7 +425,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           />
         </div>
       )}
-      
+
       {/* URL display */}
       <div className="px-3 py-2 text-xs text-slate-400 truncate border-t border-slate-700">
         {url}
@@ -447,7 +453,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
 }) => {
   const [videoUrl, setVideoUrl] = useState('');
   const [videoCaption, setVideoCaption] = useState('');
-  
+
   const handleAddVideo = () => {
     if (videoUrl.trim()) {
       onAdd({
@@ -458,7 +464,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
       setVideoCaption('');
     }
   };
-  
+
   return (
     <div className="space-y-6">
       {videos.length > 0 && (
@@ -474,7 +480,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
           ))}
         </div>
       )}
-      
+
       <div className="border border-slate-700 rounded-lg p-4 bg-slate-800/50">
         <h4 className="text-sm font-medium text-white mb-4">Add New Video</h4>
         <VideoInput
@@ -484,7 +490,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({
           caption={videoCaption}
           onCaptionChange={setVideoCaption}
         />
-        
+
         <div className="mt-4 flex justify-end">
           <button
             type="button"

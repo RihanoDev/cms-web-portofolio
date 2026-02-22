@@ -19,7 +19,7 @@ const TagInput: React.FC<TagInputProps> = ({
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  
+
   // Filter suggestions based on input
   useEffect(() => {
     if (input.trim() !== '') {
@@ -34,23 +34,23 @@ const TagInput: React.FC<TagInputProps> = ({
       setShowSuggestions(false);
     }
   }, [input, suggestions, value]);
-  
+
   // Add a tag to the list
   const addTag = (tag: string) => {
     const trimmedTag = tag.trim();
-    
+
     if (trimmedTag && !value.includes(trimmedTag) && value.length < maxTags) {
       onChange([...value, trimmedTag]);
     }
-    
+
     setInput('');
   };
-  
+
   // Remove a tag from the list
   const removeTag = (tag: string) => {
     onChange(value.filter((t) => t !== tag));
   };
-  
+
   // Handle keyboard events in the input field
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && input.trim() !== '') {
@@ -69,7 +69,7 @@ const TagInput: React.FC<TagInputProps> = ({
       }
     }
   };
-  
+
   // Handle keyboard events in the suggestion buttons
   const handleSuggestionKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, suggestion: string) => {
     if (e.key === 'Enter') {
@@ -94,12 +94,12 @@ const TagInput: React.FC<TagInputProps> = ({
       document.getElementById('tag-input')?.focus();
     }
   };
-  
+
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
   };
-  
+
   // Handle input blur
   const handleInputBlur = () => {
     // Delay hiding suggestions to allow clicks to register
@@ -107,7 +107,7 @@ const TagInput: React.FC<TagInputProps> = ({
       setShowSuggestions(false);
     }, 200);
   };
-  
+
   // Toggle edit mode
   const toggleEditMode = () => {
     setIsEditMode(!isEditMode);
@@ -118,12 +118,12 @@ const TagInput: React.FC<TagInputProps> = ({
       }, 100);
     }
   };
-  
+
   return (
     <div className="relative">
       {/* Compact view when not in edit mode */}
       {!isEditMode && (
-        <button 
+        <button
           type="button"
           className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white cursor-pointer flex items-center justify-between"
           onClick={toggleEditMode}
@@ -144,10 +144,10 @@ const TagInput: React.FC<TagInputProps> = ({
               <span className="text-slate-400">{placeholder}</span>
             )}
           </div>
-          <svg 
+          <svg
             className="w-5 h-5 text-slate-400"
-            fill="none" 
-            stroke="currentColor" 
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
@@ -156,14 +156,14 @@ const TagInput: React.FC<TagInputProps> = ({
           </svg>
         </button>
       )}
-      
+
       {/* Show tag summary when not in edit mode */}
       {!isEditMode && value.length > 0 && (
         <div className="mt-2 text-sm text-slate-400">
           <span className="text-blue-400">{value.join(", ")}</span>
         </div>
       )}
-      
+
       {/* Detailed edit mode */}
       {isEditMode && (
         <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-lg">
@@ -180,7 +180,7 @@ const TagInput: React.FC<TagInputProps> = ({
               </svg>
             </button>
           </div>
-          
+
           {/* Selected tags */}
           <div className="p-4 border-b border-slate-700">
             <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -206,21 +206,21 @@ const TagInput: React.FC<TagInputProps> = ({
                 <div className="text-slate-400 text-sm">No tags added yet</div>
               )}
             </div>
-            
+
             {value.length >= maxTags && (
               <div className="text-xs text-amber-400">
                 Maximum tags limit reached ({maxTags})
               </div>
             )}
           </div>
-          
+
           {/* Tag input */}
           <div className="p-4 border-b border-slate-700">
             <div className="flex">
               <input
                 id="tag-input"
                 type="text"
-                className="flex-1 bg-slate-700/50 border border-slate-600 rounded-l-lg px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Type a tag and press Enter..."
                 value={input}
                 onChange={handleInputChange}
@@ -229,23 +229,22 @@ const TagInput: React.FC<TagInputProps> = ({
                 onBlur={handleInputBlur}
                 disabled={value.length >= maxTags}
               />
-              <button
-                type="button"
-                onClick={() => input.trim() !== '' && addTag(input)}
-                disabled={input.trim() === '' || value.length >= maxTags}
-                className={`px-4 py-2 rounded-r-lg ${
-                  input.trim() === '' || value.length >= maxTags
-                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-              >
-                Add
-              </button>
             </div>
-            
+
             {/* Suggestions */}
-            {showSuggestions && (
+            {(showSuggestions || (input.trim() !== '' && value.length < maxTags)) && (
               <ul className="mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {/* "Create new" hint if not an exact match in suggestions or suggestions list is empty */}
+                {input.trim() !== '' && !filteredSuggestions.some(s => s.toLowerCase() === input.trim().toLowerCase()) && (
+                  <button
+                    type="button"
+                    className="tag-suggestion block w-full text-left px-4 py-2 cursor-pointer bg-blue-600/20 hover:bg-blue-600/30 font-medium text-blue-300 border-b border-slate-600"
+                    onClick={() => addTag(input)}
+                  >
+                    + Add "{input.trim()}" (Press Enter)
+                  </button>
+                )}
+
                 {filteredSuggestions.map((suggestion) => (
                   <button
                     key={suggestion}
@@ -260,7 +259,7 @@ const TagInput: React.FC<TagInputProps> = ({
               </ul>
             )}
           </div>
-          
+
           {/* Common suggestions */}
           {suggestions.length > 0 && (
             <div className="p-4">
@@ -275,11 +274,10 @@ const TagInput: React.FC<TagInputProps> = ({
                       type="button"
                       onClick={() => addTag(tag)}
                       disabled={value.length >= maxTags}
-                      className={`text-sm rounded-md px-2 py-1 ${
-                        value.length >= maxTags
-                          ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                      }`}
+                      className={`text-sm rounded-md px-2 py-1 ${value.length >= maxTags
+                        ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
                     >
                       {tag}
                     </button>

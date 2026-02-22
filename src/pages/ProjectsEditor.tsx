@@ -533,7 +533,7 @@ export default function ProjectsEditor() {
                         </div>
 
                         {project.description && (
-                          <div className="mt-3 text-slate-300 text-sm line-clamp-2">
+                          <div className="mt-3 text-slate-300 text-sm line-clamp-2 break-words">
                             {project.description}
                           </div>
                         )}
@@ -665,11 +665,14 @@ export default function ProjectsEditor() {
                           </label>
                           <CategorySelector
                             categories={categories}
-                            selectedCategories={project.categories?.map(cat => cat.id) || []}
+                            selectedCategories={project.categories?.map(cat => cat.id > 0 ? cat.id : cat.name) || []}
                             onChange={(selectedIds) => {
-                              const selectedCategories = categories.filter(cat =>
-                                selectedIds.includes(cat.id)
-                              );
+                              const selectedCategories = selectedIds.map(id => {
+                                const found = categories.find(cat => cat.id == id);
+                                if (found) return found;
+                                // It's a new category (id is actually the name)
+                                return { id: 0, name: String(id), slug: '' };
+                              });
                               updateProjectField(index, 'categories', selectedCategories);
                             }}
                           />
