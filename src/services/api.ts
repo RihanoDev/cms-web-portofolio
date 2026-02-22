@@ -196,18 +196,12 @@ export const api = {
   },
 
   async upload(path: string, formData: FormData, config?: AxiosRequestConfig) {
-
     try {
-      const uploadConfig = {
-        ...config,
-        headers: {
-          ...config?.headers,
-          "Content-Type": "multipart/form-data",
-        },
-      };
+      // Do NOT set "Content-Type": "multipart/form-data" manually.
+      // Axios will automatically set it along with the correct boundary parameter.
+      const uploadConfig = { ...config };
 
       const response: AxiosResponse = await axiosInstance.post(path, formData, uploadConfig);
-
 
       return response;
     } catch (error: any) {
