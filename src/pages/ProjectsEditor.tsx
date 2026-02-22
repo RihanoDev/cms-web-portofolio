@@ -804,36 +804,16 @@ export default function ProjectsEditor() {
                             Featured Image
                           </label>
                           <div className="flex flex-col sm:flex-row gap-4">
-                            {project.featuredImageUrl ? (
-                              <div className="w-full sm:w-1/3 relative group">
-                                <img
-                                  src={project.featuredImageUrl}
-                                  alt="Featured"
-                                  className="w-full h-40 object-cover rounded-lg border border-slate-700"
-                                />
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => updateProjectField(index, 'featuredImageUrl', '')}
-                                    className="p-2 bg-red-500 rounded-full"
-                                  >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="w-full sm:w-1/3">
-                                <MediaUploader
-                                  folder={`projects/${project.id}`}
-                                  images={[]}
-                                  onAdd={(image) => updateProjectField(index, 'featuredImageUrl', image.url)}
-                                  onUpdate={() => { }}
-                                  onRemove={() => { }}
-                                />
-                              </div>
-                            )}
+                            <div className="w-full sm:w-1/3">
+                              <MediaUploader
+                                folder={`projects/${project.id}`}
+                                images={project.featuredImageUrl ? [{ url: project.featuredImageUrl }] : []}
+                                onAdd={(image) => updateProjectField(index, 'featuredImageUrl', image.url)}
+                                onUpdate={(_i, updated) => updateProjectField(index, 'featuredImageUrl', updated.url)}
+                                onRemove={() => updateProjectField(index, 'featuredImageUrl', '')}
+                                oldFileUrl={project.featuredImageUrl}
+                              />
+                            </div>
 
                             <div className="w-full sm:w-2/3">
                               <input

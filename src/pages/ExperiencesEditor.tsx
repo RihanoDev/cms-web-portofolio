@@ -569,47 +569,22 @@ export default function ExperiencesEditor() {
                     {/* Company Logo */}
                     <div>
                       <label className="block text-xs font-medium text-slate-400 mb-2">Company Logo URL</label>
-                      <div className="space-y-2">
-                        {experience.logoUrl ? (
-                          <div className="flex items-center gap-3">
-                            <img src={experience.logoUrl} alt="Logo" className="w-16 h-16 object-contain rounded-lg border border-slate-600 bg-slate-700/50 p-1" />
-                            <div className="flex-1">
-                              <input
-                                type="url"
-                                className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="https://company.com/logo.png"
-                                value={experience.logoUrl || ""}
-                                onChange={(e) => updateExperienceField(originalIndex, "logoUrl", e.target.value)}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => updateExperienceField(originalIndex, "logoUrl", "")}
-                              className="p-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <input
-                              type="url"
-                              className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="https://company.com/logo.png"
-                              value={experience.logoUrl || ""}
-                              onChange={(e) => updateExperienceField(originalIndex, "logoUrl", e.target.value)}
-                            />
-                            <div className="mt-2">
-                              <MediaUploader
-                                folder={`experiences/${experience.id}`}
-                                images={[]}
-                                onAdd={(img) => updateExperienceField(originalIndex, "logoUrl", img.url)}
-                                onUpdate={() => { }}
-                                onRemove={() => { }}
-                              />
-                            </div>
-                          </>
-                        )}
+                      <div className="space-y-4">
+                        <input
+                          type="url"
+                          className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="https://company.com/logo.png"
+                          value={experience.logoUrl || ""}
+                          onChange={(e) => updateExperienceField(originalIndex, "logoUrl", e.target.value)}
+                        />
+                        <MediaUploader
+                          folder={`experiences/${experience.id}`}
+                          images={experience.logoUrl ? [{ url: experience.logoUrl }] : []}
+                          onAdd={(img) => updateExperienceField(originalIndex, "logoUrl", img.url)}
+                          onUpdate={(_i, updated) => updateExperienceField(originalIndex, "logoUrl", updated.url)}
+                          onRemove={() => updateExperienceField(originalIndex, "logoUrl", "")}
+                          oldFileUrl={experience.logoUrl}
+                        />
                       </div>
                     </div>
 

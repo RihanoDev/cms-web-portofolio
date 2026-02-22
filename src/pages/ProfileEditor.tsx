@@ -140,7 +140,7 @@ export default function ProfileEditor() {
 
     setSaving(true)
     try {
-      const result = await uploadMedia(file, "profiles")
+      const result = await uploadMedia(file, "profiles", preview)
       setPreview(result.fileUrl)
     } catch (err) {
 

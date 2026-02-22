@@ -610,36 +610,16 @@ export default function ArticlesEditor() {
                   Featured Image
                 </label>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  {article.featuredImageUrl ? (
-                    <div className="w-full sm:w-1/3 relative group">
-                      <img
-                        src={article.featuredImageUrl}
-                        alt="Featured"
-                        className="w-full h-40 object-cover rounded-lg border border-slate-700"
-                      />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button
-                          type="button"
-                          onClick={() => updateArticleField(index, 'featuredImageUrl', '')}
-                          className="p-2 bg-red-500 rounded-full"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-full sm:w-1/3">
-                      <MediaUploader
-                        folder={`articles/${article.id}`}
-                        images={[]}
-                        onAdd={(image) => updateArticleField(index, 'featuredImageUrl', image.url)}
-                        onUpdate={() => { }}
-                        onRemove={() => { }}
-                      />
-                    </div>
-                  )}
+                  <div className="w-full sm:w-1/3">
+                    <MediaUploader
+                      folder={`articles/${article.id}`}
+                      images={article.featuredImageUrl ? [{ url: article.featuredImageUrl }] : []}
+                      onAdd={(image) => updateArticleField(index, 'featuredImageUrl', image.url)}
+                      onUpdate={(_i, updated) => updateArticleField(index, 'featuredImageUrl', updated.url)}
+                      onRemove={() => updateArticleField(index, 'featuredImageUrl', '')}
+                      oldFileUrl={article.featuredImageUrl}
+                    />
+                  </div>
 
                   <div className="w-full sm:w-2/3">
                     <input

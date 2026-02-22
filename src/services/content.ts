@@ -390,7 +390,7 @@ const saveProjects = async (projects: Project[]) => {
       project.featuredImageUrl !== undefined
     )
       payload.thumbnailUrl =
-        project.thumbnailUrl || project.featuredImageUrl || "";
+        project.featuredImageUrl || project.thumbnailUrl || "";
     if (project.categories) {
       payload.categoryIdStrs = project.categories.map((c: any) =>
         typeof c === "object"
