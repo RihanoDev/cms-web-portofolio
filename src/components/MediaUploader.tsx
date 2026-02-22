@@ -122,8 +122,8 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('File size must be less than 10MB');
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError('File size must be less than 50MB');
       return;
     }
 
@@ -142,7 +142,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
 
       onAdd(newImage);
     } catch (error: any) {
-      
+
       setUploadError(error?.message || 'Failed to upload image. Please try again.');
     } finally {
       setUploading(false);
