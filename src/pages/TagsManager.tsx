@@ -31,7 +31,7 @@ const TagsManager: React.FC = () => {
       setTags(extendedTags);
       setError(null);
     } catch (err) {
-      console.error("Error fetching tags:", err);
+      
       setError("Failed to load tags. Please try again.");
     } finally {
       setLoading(false);
@@ -55,7 +55,7 @@ const TagsManager: React.FC = () => {
       await fetchTags();
       setError(null);
     } catch (err) {
-      console.error("Error creating tag:", err);
+      
       setError("Failed to create tag. Please try again.");
     } finally {
       setLoading(false);
@@ -75,7 +75,7 @@ const TagsManager: React.FC = () => {
       await fetchTags();
       setError(null);
     } catch (err) {
-      console.error("Error updating tag:", err);
+      
       setError("Failed to update tag. Please try again.");
     } finally {
       setLoading(false);
@@ -93,7 +93,7 @@ const TagsManager: React.FC = () => {
       await fetchTags();
       setError(null);
     } catch (err) {
-      console.error("Error deleting tag:", err);
+      
       setError("Failed to delete tag. Please try again.");
     } finally {
       setLoading(false);

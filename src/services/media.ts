@@ -58,7 +58,7 @@ export const uploadMedia = async (file: File, folder?: string): Promise<UploadRe
     }
   } catch (e) {
     // Non-fatal: if normalization fails, just return original URL
-    console.warn("Failed to normalize fileUrl:", e);
+    
   }
 
   return data as UploadResult;
@@ -73,7 +73,7 @@ export const getMedia = async (): Promise<MediaItem[]> => {
     const data = response.data?.data;
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error("Failed to fetch media:", error);
+    
     return [];
   }
 };

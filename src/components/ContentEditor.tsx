@@ -89,7 +89,7 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
           setAvailableTags(tagsData.data?.data || tagsData.data || []);
         }
       } catch (error) {
-        console.error('Error loading categories and tags:', error);
+        
       }
     };
 
@@ -156,7 +156,7 @@ export const ContentEditor: React.FC<ContentEditorProps> = ({
     try {
       await onSave(formData);
     } catch (error) {
-      console.error('Error saving content:', error);
+      
     }
   };
 

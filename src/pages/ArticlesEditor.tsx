@@ -63,13 +63,13 @@ export default function ArticlesEditor() {
               const views = await getContentViews(article.id, 'article');
               viewsData[article.id] = views;
             } catch (error) {
-              console.error(`Failed to fetch view count for article ${article.id}:`, error);
+              
             }
           }
         }
         setArticleViews(viewsData);
       } catch (error) {
-        console.error("Error loading articles:", error);
+        
         setArticles([]);
       }
     };
@@ -82,7 +82,7 @@ export default function ArticlesEditor() {
         setCategories(Array.isArray(loadedCategories) ? loadedCategories : []);
       })
       .catch(error => {
-        console.error("Error loading categories:", error);
+        
         setCategories([]);
       });
 
@@ -92,7 +92,7 @@ export default function ArticlesEditor() {
         setTags(Array.isArray(loadedTags) ? loadedTags : []);
       })
       .catch(error => {
-        console.error("Error loading tags:", error);
+        
         setTags([]);
       });
   }, []);
@@ -143,7 +143,7 @@ export default function ArticlesEditor() {
       setSavedIndex(index);
       setTimeout(() => setSavedIndex(null), 3000);
     } catch (err: any) {
-      console.error('Error saving article:', err);
+      
       setError(`Failed to save "${article.title}": ${err?.message || 'Unknown error'}`);
     } finally {
       setSavingIndex(null);
@@ -170,7 +170,7 @@ export default function ArticlesEditor() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error: any) {
-      console.error("Error saving articles:", error);
+      
 
       // Enhanced error handling with better user feedback
       if (error?.message?.includes('Authentication required')) {
@@ -216,7 +216,7 @@ export default function ArticlesEditor() {
     const query = generateSearchQuery(article.content, article.title, 8);
 
     // We can store this as a hidden field or use it for tags
-    console.log(`Generated search query for "${article.title}": ${query}`);
+    
 
     // Auto-generate tags from the query if the user wants
     if (window.confirm(`Generate tags from the content? Suggested keywords: ${query}`)) {
@@ -268,7 +268,7 @@ export default function ArticlesEditor() {
       try {
         await ContentStore.deleteArticle(article.id);
       } catch (err: any) {
-        console.error("Failed to delete article:", err);
+        
         setError("Failed to delete article. Please try again.");
         setIsDeleting(false);
         setDeleteModalOpen(false);

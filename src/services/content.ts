@@ -178,7 +178,7 @@ const getProfile = async (): Promise<Profile> => {
       phone: data["about.phone"] || ""
     };
   } catch (error) {
-    console.error("Failed to fetch profile settings", error);
+    
     return { name: "", title: "", bio: "", avatarDataUrl: "" };
   }
 };
@@ -208,7 +208,7 @@ const saveProfile = async (v: Profile): Promise<void> => {
     };
     await api.put("/settings", payload);
   } catch (error) {
-    console.error("Failed to save profile settings", error);
+    
     throw error;
   }
 };
@@ -217,7 +217,7 @@ const saveProfile = async (v: Profile): Promise<void> => {
 const getProjects = async (): Promise<Project[]> => {
   try {
     const response = await api.get("/projects");
-    console.log("Projects API response:", response);
+    
 
     const responseData = response.data?.data;
     const projects = Array.isArray(responseData?.data) ? responseData.data : Array.isArray(responseData) ? responseData : [];
@@ -241,44 +241,44 @@ const getProjects = async (): Promise<Project[]> => {
       videos: project.videos || [],
     }));
   } catch (error) {
-    console.error("Failed to fetch projects:", error);
+    
     return [];
   }
 };
 
 const saveProjects = async (projects: Project[]) => {
-  console.log("Starting saveProjects process");
+  
 
   const token = localStorage.getItem("cms_token");
-  console.log(`Token available for saving projects: ${!!token}, length: ${token?.length || 0}`);
+  
 
   if (!token) {
-    console.error("Cannot save projects to API: No authentication token found.");
+    
     throw new Error("Authentication required. Please login again to save projects to the server.");
   }
 
   if (token) {
     const tokenPrefix = token.substring(0, 10);
     const tokenSuffix = token.substring(token.length - 10);
-    console.log(`Using token: ${tokenPrefix}...${tokenSuffix} (length: ${token.length})`);
+    
 
     let cleanToken = token;
     let tokenWasCleaned = false;
 
     if (token.startsWith('"') || token.endsWith('"')) {
-      console.warn("WARNING: Token has extra quotes that might cause authentication issues");
+      
       cleanToken = token.replace(/^"|"$/g, "");
       tokenWasCleaned = true;
     }
 
     if (token.includes("\\")) {
-      console.warn("WARNING: Token has escape characters");
+      
       cleanToken = cleanToken.replace(/\\/g, "");
       tokenWasCleaned = true;
     }
 
     if (tokenWasCleaned) {
-      console.log(`Cleaning token and updating in localStorage. New token length: ${cleanToken.length}`);
+      
       localStorage.setItem("cms_token", cleanToken);
     }
   }
@@ -343,7 +343,7 @@ const saveProjects = async (projects: Project[]) => {
       }
       updatedProjects.push(response.data?.data || response.data);
     } catch (err: any) {
-      console.error(`Failed to save project ${project.title}:`, err);
+      
       throw err;
     }
   }
@@ -355,7 +355,7 @@ const saveProjects = async (projects: Project[]) => {
 const getArticles = async (): Promise<Article[]> => {
   try {
     const response = await api.get("/articles");
-    console.log("Articles API response:", response);
+    
     const responseData = response.data?.data;
     const articles = Array.isArray(responseData?.data) ? responseData.data : Array.isArray(responseData) ? responseData : [];
     return articles.map((article: any) => ({
@@ -373,7 +373,7 @@ const getArticles = async (): Promise<Article[]> => {
       publishedAt: article.publishedAt || article.published_at,
     }));
   } catch (error) {
-    console.error("Failed to fetch articles:", error);
+    
     return [];
   }
 };
@@ -381,9 +381,9 @@ const getArticles = async (): Promise<Article[]> => {
 const saveArticles = async (articles: Article[]) => {
   set("cms_articles", articles);
   const token = localStorage.getItem("cms_token");
-  console.log("Token available for saving articles:", !!token);
+  
   if (!token) {
-    console.error("Cannot save articles to API: No authentication token found. Please login again.");
+    
     throw new Error("Authentication required. Please login again to save articles to the server.");
   }
   const updatedArticles = [...articles];
@@ -496,7 +496,7 @@ const getCategories = async (): Promise<Category[]> => {
     const response = await api.get("/categories");
     return response.data?.data || response.data || [];
   } catch (error) {
-    console.error("Failed to fetch categories:", error);
+    
     return [];
   }
 };
@@ -507,7 +507,7 @@ const getTags = async (): Promise<Tag[]> => {
     const response = await api.get("/tags");
     return response.data?.data || response.data || [];
   } catch (error) {
-    console.error("Failed to fetch tags:", error);
+    
     return [];
   }
 };
@@ -516,7 +516,7 @@ const getTags = async (): Promise<Tag[]> => {
 const getExperiences = async (): Promise<Experience[]> => {
   try {
     const response = await api.get("/experiences");
-    console.log("Experiences API response:", response);
+    
 
     const responseData = response.data?.data;
     const experiences = Array.isArray(responseData?.data) ? responseData.data : Array.isArray(responseData) ? responseData : [];
@@ -542,7 +542,7 @@ const getExperiences = async (): Promise<Experience[]> => {
       period: exp.period || `${exp.startDate || ""} - ${exp.endDate || (exp.current ? "Present" : "")}`,
     }));
   } catch (error) {
-    console.error("Failed to fetch experiences:", error);
+    
     return [];
   }
 };
@@ -632,7 +632,7 @@ const saveExperiences = async (experiences: any[]): Promise<any[]> => {
         }
       }
     } catch (err: any) {
-      console.error(`Failed to save experience ${experience.company}:`, err);
+      
       throw err;
     }
   }
@@ -646,7 +646,7 @@ const createCategory = async (categoryData: Partial<Category>): Promise<Category
     const response = await api.post("/categories", categoryData);
     return response.data?.data || response.data;
   } catch (error) {
-    console.error("Failed to create category:", error);
+    
     throw error;
   }
 };
@@ -656,7 +656,7 @@ const updateCategory = async (id: number, categoryData: Partial<Category>): Prom
     const response = await api.put(`/categories/${id}`, categoryData);
     return response.data?.data || response.data;
   } catch (error) {
-    console.error(`Failed to update category ${id}:`, error);
+    
     throw error;
   }
 };
@@ -665,7 +665,7 @@ const deleteCategory = async (id: number): Promise<void> => {
   try {
     await api.delete(`/categories/${id}`);
   } catch (error) {
-    console.error(`Failed to delete category ${id}:`, error);
+    
     throw error;
   }
 };
@@ -676,7 +676,7 @@ const createTag = async (tagData: Partial<Tag>): Promise<Tag> => {
     const response = await api.post("/tags", tagData);
     return response.data?.data || response.data;
   } catch (error) {
-    console.error("Failed to create tag:", error);
+    
     throw error;
   }
 };
@@ -686,7 +686,7 @@ const updateTag = async (id: number, tagData: Partial<Tag>): Promise<Tag> => {
     const response = await api.put(`/tags/${id}`, tagData);
     return response.data?.data || response.data;
   } catch (error) {
-    console.error(`Failed to update tag ${id}:`, error);
+    
     throw error;
   }
 };
@@ -695,7 +695,7 @@ const deleteTag = async (id: number): Promise<void> => {
   try {
     await api.delete(`/tags/${id}`);
   } catch (error) {
-    console.error(`Failed to delete tag ${id}:`, error);
+    
     throw error;
   }
 };
@@ -705,7 +705,7 @@ export const deleteProject = async (id: string): Promise<void> => {
     try {
       await api.delete(`/projects/${id}`);
     } catch (error) {
-      console.error(`Failed to delete project ${id}:`, error);
+      
       throw error;
     }
   }
@@ -716,7 +716,7 @@ export const deleteArticle = async (id: string): Promise<void> => {
     try {
       await api.delete(`/articles/${id}`);
     } catch (error) {
-      console.error(`Failed to delete article ${id}:`, error);
+      
       throw error;
     }
   }
@@ -727,7 +727,7 @@ export const deleteExperience = async (id: number): Promise<void> => {
     try {
       await api.delete(`/experiences/${id}`);
     } catch (error) {
-      console.error(`Failed to delete experience ${id}:`, error);
+      
       throw error;
     }
   }

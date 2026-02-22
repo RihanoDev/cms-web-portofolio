@@ -59,7 +59,7 @@ export default function ProjectsEditor() {
         const loadedProjects = await ContentStore.getProjects();
         setProjects(Array.isArray(loadedProjects) ? loadedProjects : []);
       } catch (error) {
-        console.error("Error loading projects:", error);
+        
         setProjects([]);
       }
 
@@ -68,7 +68,7 @@ export default function ProjectsEditor() {
         const loadedCategories = await ContentStore.getCategories();
         setCategories(Array.isArray(loadedCategories) ? loadedCategories : []);
       } catch (error) {
-        console.error("Error loading categories:", error);
+        
         setCategories([]);
       }
 
@@ -77,7 +77,7 @@ export default function ProjectsEditor() {
         const loadedTags = await ContentStore.getTags();
         setTags(Array.isArray(loadedTags) ? loadedTags : []);
       } catch (error) {
-        console.error("Error loading tags:", error);
+        
         setTags([]);
       }
     };
@@ -155,7 +155,7 @@ export default function ProjectsEditor() {
       setSavedIndex(index);
       setTimeout(() => setSavedIndex(null), 3000);
     } catch (err: any) {
-      console.error('Error saving project:', err);
+      
       setError(`Failed to save "${project.title}": ${err?.message || 'Unknown error'}`);
     } finally {
       setSavingIndex(null);
@@ -194,7 +194,7 @@ export default function ProjectsEditor() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error: any) {
-      console.error("Error saving projects:", error);
+      
 
       // Enhanced error handling with better user feedback
       if (error.message && error.message.includes('Authentication required')) {
@@ -249,7 +249,7 @@ export default function ProjectsEditor() {
       try {
         await ContentStore.deleteProject(project.id);
       } catch (err: any) {
-        console.error("Failed to delete project:", err);
+        
         setError("Failed to delete project. Please try again.");
         setIsDeleting(false);
         setDeleteModalOpen(false);

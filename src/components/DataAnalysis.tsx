@@ -33,7 +33,7 @@ export const DataAnalysis: React.FC = () => {
         setMockData();
       }
     } catch (err) {
-      console.log('API not available, using mock data');
+      
       setMockData();
     }
     setLoading(false);
