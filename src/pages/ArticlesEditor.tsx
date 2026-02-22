@@ -63,13 +63,13 @@ export default function ArticlesEditor() {
               const views = await getContentViews(article.id, 'article');
               viewsData[article.id] = views;
             } catch (error) {
-              
+
             }
           }
         }
         setArticleViews(viewsData);
       } catch (error) {
-        
+
         setArticles([]);
       }
     };
@@ -82,7 +82,7 @@ export default function ArticlesEditor() {
         setCategories(Array.isArray(loadedCategories) ? loadedCategories : []);
       })
       .catch(error => {
-        
+
         setCategories([]);
       });
 
@@ -92,7 +92,7 @@ export default function ArticlesEditor() {
         setTags(Array.isArray(loadedTags) ? loadedTags : []);
       })
       .catch(error => {
-        
+
         setTags([]);
       });
   }, []);
@@ -143,7 +143,7 @@ export default function ArticlesEditor() {
       setSavedIndex(index);
       setTimeout(() => setSavedIndex(null), 3000);
     } catch (err: any) {
-      
+
       setError(`Failed to save "${article.title}": ${err?.message || 'Unknown error'}`);
     } finally {
       setSavingIndex(null);
@@ -170,7 +170,7 @@ export default function ArticlesEditor() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error: any) {
-      
+
 
       // Enhanced error handling with better user feedback
       if (error?.message?.includes('Authentication required')) {
@@ -216,7 +216,7 @@ export default function ArticlesEditor() {
     const query = generateSearchQuery(article.content, article.title, 8);
 
     // We can store this as a hidden field or use it for tags
-    
+
 
     // Auto-generate tags from the query if the user wants
     if (window.confirm(`Generate tags from the content? Suggested keywords: ${query}`)) {
@@ -268,7 +268,7 @@ export default function ArticlesEditor() {
       try {
         await ContentStore.deleteArticle(article.id);
       } catch (err: any) {
-        
+
         setError("Failed to delete article. Please try again.");
         setIsDeleting(false);
         setDeleteModalOpen(false);
@@ -633,7 +633,7 @@ export default function ArticlesEditor() {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label htmlFor={`article-content-${index}`} className="block text-xs font-medium text-slate-400" id={`article-content-label-${index}`}>
-                    Content
+                    Content {activeLang === 'id' && <span className="text-blue-400">(ID)</span>}
                   </label>
                   <button
                     type="button"
@@ -649,12 +649,21 @@ export default function ArticlesEditor() {
                     Auto-Generate Tags
                   </button>
                 </div>
-                <RichTextEditor
-                  value={article.content || ''}
-                  onChange={(value) => updateArticleField(index, 'content', value)}
-                  placeholder="Write your article content here..."
-                  aria-labelledby={`article-content-label-${index}`}
-                />
+                {activeLang === 'en' ? (
+                  <RichTextEditor
+                    value={article.content || ''}
+                    onChange={(value) => updateArticleField(index, 'content', value)}
+                    placeholder="Write your article content here..."
+                    aria-labelledby={`article-content-label-${index}`}
+                  />
+                ) : (
+                  <RichTextEditor
+                    value={getTranslation(article.metadata, 'id', 'content', '')}
+                    onChange={(value) => updateArticleField(index, 'metadata', setTranslation(article.metadata ?? {}, 'id', 'content', value))}
+                    placeholder="Tulis konten artikel Anda di sini (Bahasa Indonesia)..."
+                    aria-labelledby={`article-content-label-id-${index}`}
+                  />
+                )}
               </div>
 
               {/* Article Images */}

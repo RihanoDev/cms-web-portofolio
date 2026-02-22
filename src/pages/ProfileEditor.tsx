@@ -77,8 +77,11 @@ export default function ProfileEditor() {
   const [coreExpertise, setCoreExpertise] = React.useState<{ name: string, percentage: number }[]>([])
   const [skillCategories, setSkillCategories] = React.useState<{ category: string, technologies: string[] }[]>([])
   const [location, setLocation] = React.useState('')
+  const [location_id, setLocation_id] = React.useState('')
   const [email, setEmail] = React.useState('')
+  const [email_id, setEmail_id] = React.useState('')
   const [phone, setPhone] = React.useState('')
+  const [phone_id, setPhone_id] = React.useState('')
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
   const [availableTags, setAvailableTags] = React.useState<string[]>([])
@@ -108,11 +111,14 @@ export default function ProfileEditor() {
         setCoreExpertise(p.coreExpertise || [])
         setSkillCategories(p.skillCategories || [])
         setLocation(p.location || '')
+        setLocation_id(p.location_id || '')
         setEmail(p.email || '')
+        setEmail_id(p.email_id || '')
         setPhone(p.phone || '')
+        setPhone_id(p.phone_id || '')
         setAvailableTags(tags.map(t => t.name))
       } catch (err) {
-        
+
       }
     }
     fetchData()
@@ -137,7 +143,7 @@ export default function ProfileEditor() {
       const result = await uploadMedia(file, "profiles")
       setPreview(result.fileUrl)
     } catch (err) {
-      
+
       alert("Failed to upload image. Please try again.")
     } finally {
       setSaving(false)
@@ -155,13 +161,16 @@ export default function ProfileEditor() {
         name, title, title_id, bio, bio_id, avatarDataUrl: preview,
         aboutSubtitle, aboutSubtitle_id, aboutDescription1, aboutDescription1_id,
         aboutDescription2, aboutDescription2_id, aboutDescription3, aboutDescription3_id,
-        coreExpertise, skillCategories, location, email, phone
+        coreExpertise, skillCategories,
+        location, location_id,
+        email, email_id,
+        phone, phone_id
       }
       await ContentStore.saveProfile(profile)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
-      
+
       alert("Failed to save profile. Please try again.")
     } finally {
       setSaving(false)
@@ -501,22 +510,22 @@ export default function ProfileEditor() {
                 <FormInput
                   label="Location"
                   id="location"
-                  value={location}
-                  onChange={setLocation}
-                  placeholder="Jakarta, Indonesia"
+                  value={activeLang === 'en' ? location : location_id}
+                  onChange={activeLang === 'en' ? setLocation : setLocation_id}
+                  placeholder={activeLang === 'en' ? "Jakarta, Indonesia" : "Jakarta, Indonesia"}
                 />
                 <FormInput
                   label="Email"
                   id="email"
-                  value={email}
-                  onChange={setEmail}
+                  value={activeLang === 'en' ? email : email_id}
+                  onChange={activeLang === 'en' ? setEmail : setEmail_id}
                   placeholder="example@mail.com"
                 />
                 <FormInput
                   label="Phone"
                   id="phone"
-                  value={phone}
-                  onChange={setPhone}
+                  value={activeLang === 'en' ? phone : phone_id}
+                  onChange={activeLang === 'en' ? setPhone : setPhone_id}
                   placeholder="+62 812..."
                 />
               </div>
