@@ -50,8 +50,8 @@ export const MetadataViewer: React.FC<MetadataViewerProps> = ({
 
   const hasMetadata = metadata && Object.keys(metadata).length > 0;
   const hasRelationalData = relationalData && (
-    relationalData.categories?.length || 
-    relationalData.tags?.length || 
+    relationalData.categories?.length ||
+    relationalData.tags?.length ||
     relationalData.technologies?.length
   );
   const hasMediaData = mediaData && (mediaData.images?.length || mediaData.videos?.length);
@@ -67,7 +67,7 @@ export const MetadataViewer: React.FC<MetadataViewerProps> = ({
 
   const renderMetadataItem = (key: string, value: any, depth = 0) => {
     const indent = depth * 20;
-    
+
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       return (
         <div key={key} className="mb-2" style={{ marginLeft: `${indent}px` }}>
@@ -107,7 +107,7 @@ export const MetadataViewer: React.FC<MetadataViewerProps> = ({
     return (
       <div key={key} className="mb-2 flex" style={{ marginLeft: `${indent}px` }}>
         <span className="font-medium text-gray-700 min-w-32">{key}:</span>
-        <span className="text-gray-600 ml-2 break-all">{formatValue(value)}</span>
+        <span className="text-gray-600 ml-2 break-words text-sm">{formatValue(value)}</span>
       </div>
     );
   };
@@ -129,13 +129,13 @@ export const MetadataViewer: React.FC<MetadataViewerProps> = ({
 
   return (
     <div className={`bg-gray-50 border border-gray-200 rounded-lg p-4 ${className}`}>
-      <div 
+      <div
         className="flex items-center justify-between cursor-pointer mb-2"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
         <button className="text-gray-500 hover:text-gray-700">
-          {isExpanded ? '▼' : '▶'} 
+          {isExpanded ? '▼' : '▶'}
         </button>
       </div>
 

@@ -377,9 +377,15 @@ const saveProjects = async (projects: Project[]) => {
       payload.thumbnailUrl =
         project.thumbnailUrl || project.featuredImageUrl || "";
     if (project.categories && project.categories.length > 0) {
-      payload.categoryId = project.categories[0].id;
+      payload.categoryIdStrs = project.categories.map((c: any) =>
+        typeof c === "object"
+          ? c.id > 0
+            ? String(c.id)
+            : String(c.name || "")
+          : String(c),
+      );
     } else if (project.categoryId !== undefined) {
-      payload.categoryId = project.categoryId ?? null;
+      payload.categoryIds = project.categoryId ? [project.categoryId] : [];
     }
     if (project.githubUrl !== undefined) payload.githubUrl = project.githubUrl;
     if (

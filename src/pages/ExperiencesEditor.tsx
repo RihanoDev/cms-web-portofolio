@@ -437,7 +437,12 @@ export default function ExperiencesEditor() {
                 {/* Brief preview when collapsed */}
                 {!isEditing && (
                   <div className="space-y-3">
-                    {experience.description && <div className="text-slate-300 line-clamp-2" dangerouslySetInnerHTML={{ __html: experience.description.substring(0, 150) + "..." }} />}
+                    {experience.description && (
+                      <div
+                        className="text-slate-300 text-sm line-clamp-2 break-words"
+                        dangerouslySetInnerHTML={{ __html: experience.description.substring(0, 150) + "..." }}
+                      />
+                    )}
 
                     {experience.technologies.length > 0 && (
                       <div className="flex flex-wrap gap-1">
