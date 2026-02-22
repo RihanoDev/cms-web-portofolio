@@ -59,7 +59,7 @@ export default function ProjectsEditor() {
         const loadedProjects = await ContentStore.getProjects();
         setProjects(Array.isArray(loadedProjects) ? loadedProjects : []);
       } catch (error) {
-        
+
         setProjects([]);
       }
 
@@ -68,7 +68,7 @@ export default function ProjectsEditor() {
         const loadedCategories = await ContentStore.getCategories();
         setCategories(Array.isArray(loadedCategories) ? loadedCategories : []);
       } catch (error) {
-        
+
         setCategories([]);
       }
 
@@ -77,7 +77,7 @@ export default function ProjectsEditor() {
         const loadedTags = await ContentStore.getTags();
         setTags(Array.isArray(loadedTags) ? loadedTags : []);
       } catch (error) {
-        
+
         setTags([]);
       }
     };
@@ -95,7 +95,7 @@ export default function ProjectsEditor() {
       description: '',
       content: '',
       technologies: [],
-      status: 'ongoing',
+      status: 'draft',
       categories: [],
       tags: [],
       link: '',
@@ -155,7 +155,7 @@ export default function ProjectsEditor() {
       setSavedIndex(index);
       setTimeout(() => setSavedIndex(null), 3000);
     } catch (err: any) {
-      
+
       setError(`Failed to save "${project.title}": ${err?.message || 'Unknown error'}`);
     } finally {
       setSavingIndex(null);
@@ -194,7 +194,7 @@ export default function ProjectsEditor() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error: any) {
-      
+
 
       // Enhanced error handling with better user feedback
       if (error.message && error.message.includes('Authentication required')) {
@@ -249,7 +249,7 @@ export default function ProjectsEditor() {
       try {
         await ContentStore.deleteProject(project.id);
       } catch (err: any) {
-        
+
         setError("Failed to delete project. Please try again.");
         setIsDeleting(false);
         setDeleteModalOpen(false);
@@ -305,7 +305,7 @@ export default function ProjectsEditor() {
     : projectsArray.filter(project =>
       project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.technologies?.some(tech => tech.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      project.technologies?.some(tech => (typeof tech === 'string' ? tech : (tech as any)?.name || '').toLowerCase().includes(searchTerm.toLowerCase())) ||
       project.content?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -389,9 +389,9 @@ export default function ProjectsEditor() {
                   </div>
                   <div className="bg-slate-700/40 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-white">
-                      {projectsArray.filter(p => p.status === 'completed').length}
+                      {projectsArray.filter(p => p.status === 'published' || p.status === 'completed').length}
                     </div>
-                    <div className="text-xs text-slate-400">Completed</div>
+                    <div className="text-xs text-slate-400">Published / Completed</div>
                   </div>
                 </div>
               </div>
@@ -527,7 +527,7 @@ export default function ProjectsEditor() {
                               key={i}
                               className="px-2 py-0.5 bg-purple-500/30 text-purple-300 text-xs rounded-lg"
                             >
-                              {tech}
+                              {typeof tech === 'string' ? tech : (tech as any)?.name || ''}
                             </span>
                           ))}
                         </div>
@@ -584,7 +584,7 @@ export default function ProjectsEditor() {
 
                         <div className="mt-3 text-xs text-slate-400 flex items-center gap-2">
                           <div className="px-2 py-0.5 bg-slate-700/70 rounded-md">
-                            {project.status || 'ongoing'}
+                            {project.status === 'published' ? 'Published' : project.status === 'private' ? 'Private' : 'Draft'}
                           </div>
                           <div>
                             ID: {project.id ? project.id.substring(0, 8) : 'Not set'}
@@ -637,13 +637,12 @@ export default function ProjectsEditor() {
                           <select
                             id={`project-status-${index}`}
                             className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            value={project.status || 'ongoing'}
+                            value={project.status || 'draft'}
                             onChange={(e) => updateProjectField(index, 'status', e.target.value)}
                           >
-                            <option value="ongoing">Ongoing</option>
-                            <option value="completed">Completed</option>
-                            <option value="planning">Planning</option>
-                            <option value="archived">Archived</option>
+                            <option value="draft">Draft (Ongoing)</option>
+                            <option value="published">Published (Completed)</option>
+                            <option value="private">Private (Planning/Archived)</option>
                           </select>
                         </div>
 
@@ -827,13 +826,21 @@ export default function ProjectsEditor() {
                         {/* Rich Text Content */}
                         <div>
                           <label className="block text-xs font-medium text-slate-400 mb-2">
-                            Project Details
+                            Project Details {activeLang === 'id' && <span className="text-blue-400">(ID)</span>}
                           </label>
-                          <RichTextEditor
-                            value={project.content || ''}
-                            onChange={(value) => updateProjectField(index, 'content', value)}
-                            placeholder="Write detailed information about your project here..."
-                          />
+                          {activeLang === 'en' ? (
+                            <RichTextEditor
+                              value={project.content || ''}
+                              onChange={(value) => updateProjectField(index, 'content', value)}
+                              placeholder="Write detailed information about your project here..."
+                            />
+                          ) : (
+                            <RichTextEditor
+                              value={getTranslation(project.metadata, 'id', 'content', '')}
+                              onChange={(value) => updateProjectField(index, 'metadata', setTranslation(project.metadata, 'id', 'content', value))}
+                              placeholder="Tulis informasi detail mengenai proyek Anda di sini (Bahasa Indonesia)..."
+                            />
+                          )}
                         </div>
 
                         {/* Project Images */}
