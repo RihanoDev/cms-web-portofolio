@@ -351,63 +351,65 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   }, [url]);
 
   return (
-    <div className="relative group border border-slate-700 rounded-lg overflow-hidden bg-slate-800">
-      <div className="relative pb-[56.25%] h-0 bg-black">
-        {embedUrl ? (
-          <iframe
-            src={embedUrl}
-            title="Video preview"
-            className="absolute top-0 left-0 w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          ></iframe>
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-            <div className="text-center">
-              <svg
-                className="w-12 h-12 mx-auto mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-sm">Invalid video URL</p>
-              {error && <p className="text-xs mt-2 text-red-400">{error}</p>}
-              <p className="text-xs mt-1">Try using direct YouTube or Vimeo links</p>
+    <div className="border border-slate-700 rounded-lg overflow-hidden bg-slate-800">
+      <div className="relative group">
+        <div className="relative pb-[56.25%] h-0 bg-black">
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              title="Video preview"
+              className="absolute top-0 left-0 w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+              <div className="text-center">
+                <svg
+                  className="w-12 h-12 mx-auto mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <p className="text-sm">Invalid video URL</p>
+                {error && <p className="text-xs mt-2 text-red-400">{error}</p>}
+                <p className="text-xs mt-1">Try using direct YouTube or Vimeo links</p>
+              </div>
             </div>
+          )}
+        </div>
+
+        {/* Hover overlay with actions */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
+          <div className="flex justify-end">
+            <button
+              onClick={onRemove}
+              className="p-1 bg-red-500/80 hover:bg-red-500 rounded-full"
+              title="Remove video"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
           </div>
-        )}
-      </div>
 
-      {/* Hover overlay with actions */}
-      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-        <div className="flex justify-end">
-          <button
-            onClick={onRemove}
-            className="p-1 bg-red-500/80 hover:bg-red-500 rounded-full"
-            title="Remove video"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
+          <div className="flex justify-center">
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="px-3 py-1 bg-slate-600/80 hover:bg-slate-600 rounded-lg text-xs"
+            >
+              {showDetails ? 'Hide Details' : 'Edit Details'}
+            </button>
+          </div>
         </div>
-
-        <div className="flex justify-center">
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="px-3 py-1 bg-slate-600/80 hover:bg-slate-600 rounded-lg text-xs"
-          >
-            {showDetails ? 'Hide Details' : 'Edit Details'}
-          </button>
-        </div>
-      </div>
+      </div> {/* This closes the 'relative group' div */}
 
       {/* Caption section */}
       {showDetails && onCaptionChange && (

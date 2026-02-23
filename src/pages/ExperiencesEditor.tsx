@@ -216,7 +216,11 @@ export default function ExperiencesEditor() {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         setSavingIndex(index);
         try {
-          const [saved] = await saveExperiences([experience as any]);
+          const allSaved = await saveExperiences([experience as any]);
+          const saved = allSaved.find(e => isNew
+            ? (e.title === experience.title && e.company === experience.company && e.startDate === experience.startDate)
+            : String(e.id) === String(experience.id)
+          ) || allSaved[0];
           setExperiences(prev => prev.map((e, i) => i === index ? { ...e, ...saved } as Experience : e));
           setSavedIndex(index);
           setTimeout(() => setSavedIndex(null), 3000);
@@ -252,8 +256,8 @@ export default function ExperiencesEditor() {
       }
 
       // Call API to save experiences
-
-      await saveExperiences(experiences as any);
+      const allSaved = await saveExperiences(experiences as any);
+      setExperiences(allSaved as Experience[]);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error: any) {

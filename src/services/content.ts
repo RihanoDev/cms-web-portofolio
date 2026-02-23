@@ -321,8 +321,8 @@ const getProjects = async (): Promise<Project[]> => {
           project.live_demo_url ||
           "",
         technologies,
-        images: project.images || [],
-        videos: project.videos || [],
+        images: (project.metadata && project.metadata.images) || project.images || [],
+        videos: (project.metadata && project.metadata.videos) || project.videos || [],
         metadata: project.metadata || {},
       };
     });
@@ -494,8 +494,8 @@ const getArticles = async (): Promise<Article[]> => {
         : Array.isArray(article.tags)
           ? article.tags.map((t: any) => typeof t === 'string' ? { id: 0, name: t } : t)
           : [],
-      images: article.images || [],
-      videos: article.videos || [],
+      images: (article.metadata && article.metadata.images) || article.images || [],
+      videos: (article.metadata && article.metadata.videos) || article.videos || [],
       publishedAt: article.publishedAt || article.published_at,
       // Preserve metadata termasuk translations
       metadata: article.metadata || {},
