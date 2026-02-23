@@ -8,7 +8,7 @@ import VideoUploader from '../components/VideoUploader';
 import UuidGenerator from '../components/UuidGenerator';
 import TechnologySelector from '../components/TechnologySelector';
 import MetadataViewer from '../components/MetadataViewer';
-import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import ConfirmActionModal from '../components/ConfirmActionModal';
 import LangToggle, { getTranslation, setTranslation } from '../components/LangToggle';
 // Card component for consistent UI
 const Card = ({ title, children }: { title?: string, children: React.ReactNode }) => (
@@ -46,9 +46,15 @@ export default function ProjectsEditor() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteTargetIndex, setDeleteTargetIndex] = useState<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "primary" as "primary" | "danger" | "success",
+    confirmText: "Confirm",
+    action: async () => { },
+    isLoading: false
+  });
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   // Load data on component mount
@@ -126,7 +132,7 @@ export default function ProjectsEditor() {
   };
 
   // Save a single project by its array index
-  const saveOneProject = async (index: number) => {
+  const saveOneProject = (index: number) => {
     const project = projects[index];
     if (!project) return;
 
@@ -146,33 +152,45 @@ export default function ProjectsEditor() {
       return;
     }
 
-    setSavingIndex(index);
-    setError(null);
-    try {
-      const allSaved = await ContentStore.saveProjects([project]);
-      const isExisting = project.id && !project.id.startsWith("temp-");
-      const saved = allSaved.find(p => isExisting ? String(p.id) === String(project.id) : p.slug === project.slug) || allSaved[0];
-      // Replace temp project with the real one returned from API
-      setProjects(prev => prev.map((p, i) => i === index ? { ...saved } : p));
+    const isExisting = project.id && !project.id.startsWith("temp-");
 
-      // Refresh categories and tags because new ones might have been created
-      try {
-        const loadedCats = await ContentStore.getCategories();
-        if (Array.isArray(loadedCats)) setCategories(loadedCats);
-        const loadedTags = await ContentStore.getTags();
-        if (Array.isArray(loadedTags)) setTags(loadedTags);
-      } catch (e) {
-        console.error("Failed to refresh metadata after save", e);
+    setConfirmModal({
+      isOpen: true,
+      title: isExisting ? "Update Project" : "Create Project",
+      message: `Are you sure you want to ${isExisting ? 'update' : 'create'} project "${project.title}"?`,
+      type: isExisting ? "primary" : "success",
+      confirmText: isExisting ? "Update" : "Create",
+      isLoading: false,
+      action: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        setSavingIndex(index);
+        setError(null);
+        try {
+          const allSaved = await ContentStore.saveProjects([project]);
+          const saved = allSaved.find(p => isExisting ? String(p.id) === String(project.id) : p.slug === project.slug) || allSaved[0];
+          // Replace temp project with the real one returned from API
+          setProjects(prev => prev.map((p, i) => i === index ? { ...saved } : p));
+
+          // Refresh categories and tags because new ones might have been created
+          try {
+            const loadedCats = await ContentStore.getCategories();
+            if (Array.isArray(loadedCats)) setCategories(loadedCats);
+            const loadedTags = await ContentStore.getTags();
+            if (Array.isArray(loadedTags)) setTags(loadedTags);
+          } catch (e) {
+            console.error("Failed to refresh metadata after save", e);
+          }
+
+          setSavedIndex(index);
+          setTimeout(() => setSavedIndex(null), 3000);
+        } catch (err: any) {
+          setError(`Failed to save "${project.title}": ${err?.message || 'Unknown error'}`);
+        } finally {
+          setSavingIndex(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        }
       }
-
-      setSavedIndex(index);
-      setTimeout(() => setSavedIndex(null), 3000);
-    } catch (err: any) {
-
-      setError(`Failed to save "${project.title}": ${err?.message || 'Unknown error'}`);
-    } finally {
-      setSavingIndex(null);
-    }
+    });
   };
 
   // Save all projects
@@ -258,43 +276,38 @@ export default function ProjectsEditor() {
 
   // Remove a project (Triggers Modal)
   const removeProject = (index: number) => {
-    setDeleteTargetIndex(index);
-    setDeleteModalOpen(true);
-  };
-
-  const confirmDeleteProject = async () => {
-    if (deleteTargetIndex === null) return;
-
-    const project = projects[deleteTargetIndex];
-
-    // If it's saved in backend, call delete API
-    if (project.id && !project.id.startsWith("temp-")) {
-      setIsDeleting(true);
-      try {
-        await ContentStore.deleteProject(project.id);
-      } catch (err: any) {
-
-        setError("Failed to delete project. Please try again.");
-        setIsDeleting(false);
-        setDeleteModalOpen(false);
-        setDeleteTargetIndex(null);
-        return;
+    const project = projects[index];
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Project",
+      message: `Are you sure you want to delete project "${project.title || 'New Project'}"? This action cannot be undone.`,
+      type: "danger",
+      confirmText: "Delete",
+      isLoading: false,
+      action: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        // If it's saved in backend, call delete API
+        if (project.id && !project.id.startsWith("temp-")) {
+          try {
+            await ContentStore.deleteProject(project.id);
+            setShowDeleteSuccess(true);
+            setTimeout(() => setShowDeleteSuccess(false), 3000);
+          } catch (err: any) {
+            setError("Failed to delete project. Please try again.");
+            setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+            return;
+          }
+        }
+        // Remove from local state
+        setProjects(prev => prev.filter((_, i) => i !== index));
+        if (editingIndex === index) {
+          setEditingIndex(null);
+        } else if (editingIndex !== null && editingIndex > index) {
+          setEditingIndex(editingIndex - 1);
+        }
+        setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
       }
-      setIsDeleting(false);
-      setShowDeleteSuccess(true);
-      setTimeout(() => setShowDeleteSuccess(false), 3000);
-    }
-
-    // Remove from local state
-    setProjects(prev => prev.filter((_, i) => i !== deleteTargetIndex));
-    if (editingIndex === deleteTargetIndex) {
-      setEditingIndex(null);
-    } else if (editingIndex !== null && editingIndex > deleteTargetIndex) {
-      setEditingIndex(editingIndex - 1);
-    }
-
-    setDeleteModalOpen(false);
-    setDeleteTargetIndex(null);
+    });
   };
 
   // Generate a slug from the title
@@ -992,16 +1005,15 @@ export default function ProjectsEditor() {
         </div>
       </div>
 
-      <ConfirmDeleteModal
-        isOpen={deleteModalOpen}
-        title="Delete Project"
-        itemName={deleteTargetIndex !== null && projectsArray[deleteTargetIndex] ? projectsArray[deleteTargetIndex].title || 'Untitled Project' : ''}
-        onConfirm={confirmDeleteProject}
-        onCancel={() => {
-          setDeleteModalOpen(false);
-          setDeleteTargetIndex(null);
-        }}
-        isDeleting={isDeleting}
+      <ConfirmActionModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        actionType={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isLoading={confirmModal.isLoading}
       />
     </div>
   );

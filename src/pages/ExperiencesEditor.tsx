@@ -4,7 +4,7 @@ import UuidGenerator from "../components/UuidGenerator";
 import MetadataViewer from "../components/MetadataViewer";
 import MediaUploader from "../components/MediaUploader";
 import { getExperiences, saveExperiences, deleteExperience as apiDeleteExperience } from "../services/content";
-import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import ConfirmActionModal from "../components/ConfirmActionModal";
 import LangToggle, { getTranslation, setTranslation } from "../components/LangToggle";
 
 // Tag interface for relational data
@@ -89,9 +89,15 @@ export default function ExperiencesEditor() {
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteTargetIndex, setDeleteTargetIndex] = useState<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "primary" as "primary" | "danger" | "success",
+    confirmText: "Confirm",
+    action: async () => { },
+    isLoading: false
+  });
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   // Load experiences on component mount
@@ -142,43 +148,37 @@ export default function ExperiencesEditor() {
 
   // Delete experience (Triggers Modal)
   const deleteExperience = (index: number) => {
-    setDeleteTargetIndex(index);
-    setDeleteModalOpen(true);
-  };
-
-  const confirmDeleteExperience = async () => {
-    if (deleteTargetIndex === null) return;
-
-    const experience = experiences[deleteTargetIndex];
-
-    // If it's saved in backend, call delete API
-    if (experience.id && experience.id > 0) {
-      setIsDeleting(true);
-      try {
-        await apiDeleteExperience(experience.id);
-      } catch (err: any) {
-
-        setError("Failed to delete experience. Please try again.");
-        setIsDeleting(false);
-        setDeleteModalOpen(false);
-        setDeleteTargetIndex(null);
-        return;
+    const experience = experiences[index];
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Experience",
+      message: `Are you sure you want to delete experience "${experience.company || 'New Experience'}"? This action cannot be undone.`,
+      type: "danger",
+      confirmText: "Delete",
+      isLoading: false,
+      action: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        if (experience.id && experience.id > 0) {
+          try {
+            await apiDeleteExperience(experience.id);
+            setShowDeleteSuccess(true);
+            setTimeout(() => setShowDeleteSuccess(false), 3000);
+          } catch (err: any) {
+            setError("Failed to delete experience. Please try again.");
+            setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+            return;
+          }
+        }
+        // Remove from local state
+        setExperiences((prev) => prev.filter((_, i) => i !== index));
+        if (editingIndex === index) {
+          setEditingIndex(null);
+        } else if (editingIndex !== null && editingIndex > index) {
+          setEditingIndex(editingIndex - 1);
+        }
+        setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
       }
-      setIsDeleting(false);
-      setShowDeleteSuccess(true);
-      setTimeout(() => setShowDeleteSuccess(false), 3000);
-    }
-
-    // Remove from local state
-    setExperiences((prev) => prev.filter((_, i) => i !== deleteTargetIndex));
-    if (editingIndex === deleteTargetIndex) {
-      setEditingIndex(null);
-    } else if (editingIndex !== null && editingIndex > deleteTargetIndex) {
-      setEditingIndex(editingIndex - 1);
-    }
-
-    setDeleteModalOpen(false);
-    setDeleteTargetIndex(null);
+    });
   };
 
   // Toggle editing state
@@ -187,42 +187,47 @@ export default function ExperiencesEditor() {
   };
 
   // Save a single experience by its array index
-  const saveOneExperience = async (index: number) => {
+  const saveOneExperience = (index: number) => {
     const experience = experiences[index];
     if (!experience) return;
 
-    if (!experience.title?.trim()) {
-      alert('Pekerjaan (Title) harus diisi.');
-      return;
-    }
-    if (!experience.company?.trim()) {
-      alert('Nama perusahaan (Company) harus diisi.');
-      return;
-    }
-    if (!experience.startDate?.trim()) {
-      alert('Tanggal mulai (Start Date) harus diisi.');
+    if (!experience.title?.trim() || !experience.company?.trim() || !experience.startDate?.trim()) {
+      setError('Pekerjaan (Title), Perusahaan (Company), dan Tanggal Mulai (Start Date) harus diisi.');
       return;
     }
 
     const token = localStorage.getItem('cms_token');
     if (!token) {
-      alert('No authentication token found. Please log in.');
+      setError('No authentication token found. Please log in.');
       setTimeout(() => { window.location.href = '/login'; }, 1500);
       return;
     }
 
-    setSavingIndex(index);
-    try {
-      const [saved] = await saveExperiences([experience as any]);
-      setExperiences(prev => prev.map((e, i) => i === index ? { ...e, ...saved } as Experience : e));
-      setSavedIndex(index);
-      setTimeout(() => setSavedIndex(null), 3000);
-    } catch (err: any) {
+    const isNew = !experience.id || experience.id === 0;
 
-      alert(`Gagal menyimpan "${experience.title || experience.company}": ${err?.message || 'Unknown error'}`);
-    } finally {
-      setSavingIndex(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: isNew ? "Create Experience" : "Update Experience",
+      message: `Are you sure you want to ${isNew ? 'create' : 'update'} experience "${experience.title} at ${experience.company}"?`,
+      type: isNew ? "success" : "primary",
+      confirmText: isNew ? "Create" : "Update",
+      isLoading: false,
+      action: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        setSavingIndex(index);
+        try {
+          const [saved] = await saveExperiences([experience as any]);
+          setExperiences(prev => prev.map((e, i) => i === index ? { ...e, ...saved } as Experience : e));
+          setSavedIndex(index);
+          setTimeout(() => setSavedIndex(null), 3000);
+        } catch (err: any) {
+          setError(`Gagal menyimpan "${experience.title || experience.company}": ${err?.message || 'Unknown error'}`);
+        } finally {
+          setSavingIndex(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        }
+      }
+    });
   };
 
   // Save all experiences
@@ -768,16 +773,15 @@ export default function ExperiencesEditor() {
         )}
       </div>
 
-      <ConfirmDeleteModal
-        isOpen={deleteModalOpen}
-        title="Delete Experience"
-        itemName={deleteTargetIndex !== null && experiences[deleteTargetIndex] ? experiences[deleteTargetIndex].company || 'New Experience' : ''}
-        onConfirm={confirmDeleteExperience}
-        onCancel={() => {
-          setDeleteModalOpen(false);
-          setDeleteTargetIndex(null);
-        }}
-        isDeleting={isDeleting}
+      <ConfirmActionModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        actionType={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isLoading={confirmModal.isLoading}
       />
     </div >
   );

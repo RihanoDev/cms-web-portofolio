@@ -9,7 +9,7 @@ import UuidGenerator from '../components/UuidGenerator';
 import ViewTracker from '../components/ViewTracker';
 import MetadataViewer from '../components/MetadataViewer';
 import { getContentViews, generateSearchQuery } from '../services/analytics';
-import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import ConfirmActionModal from '../components/ConfirmActionModal';
 import LangToggle, { getTranslation, setTranslation } from '../components/LangToggle';
 
 // Card component for consistent UI
@@ -42,9 +42,15 @@ export default function ArticlesEditor() {
   const [searchTerm, setSearchTerm] = useState('');
   const [articleViews, setArticleViews] = useState<Record<string, number>>({});
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteTargetIndex, setDeleteTargetIndex] = useState<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "primary" as "primary" | "danger" | "success",
+    confirmText: "Confirm",
+    action: async () => { },
+    isLoading: false
+  });
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   useEffect(() => {
@@ -119,7 +125,7 @@ export default function ArticlesEditor() {
   };
 
   // Save a single article by its array index
-  const saveOneArticle = async (index: number) => {
+  const saveOneArticle = (index: number) => {
     const article = articles[index];
     if (!article) return;
 
@@ -135,32 +141,44 @@ export default function ArticlesEditor() {
       return;
     }
 
-    setSavingIndex(index);
-    setError(null);
-    try {
-      const allSaved = await ContentStore.saveArticles([article]);
-      const isExisting = article.id && !article.id.startsWith("temp-");
-      const saved = allSaved.find(a => isExisting ? String(a.id) === String(article.id) : a.slug === article.slug) || allSaved[0];
-      setArticles(prev => prev.map((a, i) => i === index ? { ...saved } : a));
+    const isExisting = article.id && !article.id.startsWith("temp-");
 
-      // Refresh categories and tags because new ones might have been created
-      try {
-        const loadedCats = await ContentStore.getCategories();
-        if (Array.isArray(loadedCats)) setCategories(loadedCats);
-        const loadedTags = await ContentStore.getTags();
-        if (Array.isArray(loadedTags)) setTags(loadedTags);
-      } catch (e) {
-        console.error("Failed to refresh metadata after save", e);
+    setConfirmModal({
+      isOpen: true,
+      title: isExisting ? "Update Article" : "Create Article",
+      message: `Are you sure you want to ${isExisting ? 'update' : 'create'} article "${article.title}"?`,
+      type: isExisting ? "primary" : "success",
+      confirmText: isExisting ? "Update" : "Create",
+      isLoading: false,
+      action: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        setSavingIndex(index);
+        setError(null);
+        try {
+          const allSaved = await ContentStore.saveArticles([article]);
+          const saved = allSaved.find(a => isExisting ? String(a.id) === String(article.id) : a.slug === article.slug) || allSaved[0];
+          setArticles(prev => prev.map((a, i) => i === index ? { ...saved } : a));
+
+          // Refresh categories and tags because new ones might have been created
+          try {
+            const loadedCats = await ContentStore.getCategories();
+            if (Array.isArray(loadedCats)) setCategories(loadedCats);
+            const loadedTags = await ContentStore.getTags();
+            if (Array.isArray(loadedTags)) setTags(loadedTags);
+          } catch (e) {
+            console.error("Failed to refresh metadata after save", e);
+          }
+
+          setSavedIndex(index);
+          setTimeout(() => setSavedIndex(null), 3000);
+        } catch (err: any) {
+          setError(`Failed to save "${article.title}": ${err?.message || 'Unknown error'}`);
+        } finally {
+          setSavingIndex(null);
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        }
       }
-
-      setSavedIndex(index);
-      setTimeout(() => setSavedIndex(null), 3000);
-    } catch (err: any) {
-
-      setError(`Failed to save "${article.title}": ${err?.message || 'Unknown error'}`);
-    } finally {
-      setSavingIndex(null);
-    }
+    });
   };
 
   // Save all articles
@@ -243,77 +261,81 @@ export default function ArticlesEditor() {
 
 
     // Auto-generate tags from the query if the user wants
-    if (window.confirm(`Generate tags from the content? Suggested keywords: ${query}`)) {
-      const keywordArray = query
-        .split(' ')
-        .filter(word => word.length > 3)
-        .slice(0, 5); // Take top 5 keywords
+    setConfirmModal({
+      isOpen: true,
+      title: "Generate Tags",
+      message: `Generate tags from the content? Suggested keywords: ${query}`,
+      type: "primary",
+      confirmText: "Generate",
+      isLoading: false,
+      action: async () => {
+        const keywordArray = query
+          .split(' ')
+          .filter(word => word.length > 3)
+          .slice(0, 5); // Take top 5 keywords
 
-      const newTags = keywordArray.map(keyword => {
-        const existingTag = tags.find(t => t.name.toLowerCase() === keyword.toLowerCase());
-        if (existingTag) return existingTag;
-        return {
-          id: -Date.now() - Math.floor(Math.random() * 1000), // Temporary negative ID to indicate it's new
-          name: keyword,
-          slug: generateSlug(keyword)
-        };
-      });
+        const newTags = keywordArray.map(keyword => {
+          const existingTag = tags.find(t => t.name.toLowerCase() === keyword.toLowerCase());
+          if (existingTag) return existingTag;
+          return {
+            id: -Date.now() - Math.floor(Math.random() * 1000), // Temporary negative ID to indicate it's new
+            name: keyword,
+            slug: generateSlug(keyword)
+          };
+        });
 
-      // Merge with existing tags if any
-      const existingTags = article.tags || [];
-      const mergedTags = [...existingTags];
+        // Merge with existing tags if any
+        const existingTags = article.tags || [];
+        const mergedTags = [...existingTags];
 
-      // Add new tags that don't already exist
-      newTags.forEach(newTag => {
-        const tagExists = existingTags.some(t => t.name.toLowerCase() === newTag.name.toLowerCase());
-        if (!tagExists) {
-          mergedTags.push(newTag);
-        }
-      });
+        // Add new tags that don't already exist
+        newTags.forEach(newTag => {
+          const tagExists = existingTags.some(t => t.name.toLowerCase() === newTag.name.toLowerCase());
+          if (!tagExists) {
+            mergedTags.push(newTag);
+          }
+        });
 
-      updateArticleField(index, 'tags', mergedTags);
-    }
+        updateArticleField(index, 'tags', mergedTags);
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   // Remove an article (Triggers Modal)
   const removeArticle = (index: number) => {
-    setDeleteTargetIndex(index);
-    setDeleteModalOpen(true);
-  };
-
-  const confirmDeleteArticle = async () => {
-    if (deleteTargetIndex === null) return;
-
-    const article = articles[deleteTargetIndex];
-
-    // If it's saved in backend, call delete API
-    if (article.id && !article.id.startsWith("temp-")) {
-      setIsDeleting(true);
-      try {
-        await ContentStore.deleteArticle(article.id);
-      } catch (err: any) {
-
-        setError("Failed to delete article. Please try again.");
-        setIsDeleting(false);
-        setDeleteModalOpen(false);
-        setDeleteTargetIndex(null);
-        return;
+    const article = articles[index];
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Article",
+      message: `Are you sure you want to delete article "${article.title || 'New Article'}"? This action cannot be undone.`,
+      type: "danger",
+      confirmText: "Delete",
+      isLoading: false,
+      action: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        // If it's saved in backend, call delete API
+        if (article.id && !article.id.startsWith("temp-")) {
+          try {
+            await ContentStore.deleteArticle(article.id);
+            setShowDeleteSuccess(true);
+            setTimeout(() => setShowDeleteSuccess(false), 3000);
+          } catch (err: any) {
+            setError("Failed to delete article. Please try again.");
+            setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+            return;
+          }
+        }
+        // Remove from local state
+        setArticles(prev => prev.filter((_, i) => i !== index));
+        if (editingIndex === index) {
+          setEditingIndex(null);
+        } else if (editingIndex !== null && editingIndex > index) {
+          setEditingIndex(editingIndex - 1);
+        }
+        setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
       }
-      setIsDeleting(false);
-      setShowDeleteSuccess(true);
-      setTimeout(() => setShowDeleteSuccess(false), 3000);
-    }
-
-    // Remove from local state
-    setArticles(prev => prev.filter((_, i) => i !== deleteTargetIndex));
-    if (editingIndex === deleteTargetIndex) {
-      setEditingIndex(null);
-    } else if (editingIndex !== null && editingIndex > deleteTargetIndex) {
-      setEditingIndex(editingIndex - 1);
-    }
-
-    setDeleteModalOpen(false);
-    setDeleteTargetIndex(null);
+    });
   };
 
   // Generate a slug from the title
@@ -963,16 +985,15 @@ export default function ArticlesEditor() {
         </div>
       </div>
 
-      <ConfirmDeleteModal
-        isOpen={deleteModalOpen}
-        title="Delete Article"
-        itemName={deleteTargetIndex !== null && articles[deleteTargetIndex] ? articles[deleteTargetIndex].title || 'Untitled Article' : ''}
-        onConfirm={confirmDeleteArticle}
-        onCancel={() => {
-          setDeleteModalOpen(false);
-          setDeleteTargetIndex(null);
-        }}
-        isDeleting={isDeleting}
+      <ConfirmActionModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        actionType={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isLoading={confirmModal.isLoading}
       />
     </div>
   );

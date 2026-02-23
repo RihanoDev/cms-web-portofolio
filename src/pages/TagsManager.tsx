@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api";
 import { Tag, getTags, createTag, updateTag, deleteTag } from "../services/content";
+import ConfirmActionModal from "../components/ConfirmActionModal";
 
 interface ExtendedTag extends Tag {
   description?: string;
@@ -15,6 +16,17 @@ const TagsManager: React.FC = () => {
   const [newTag, setNewTag] = useState({ name: "", description: "" });
   const [editingTag, setEditingTag] = useState<ExtendedTag | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "primary" as "primary" | "danger" | "success",
+    confirmText: "Confirm",
+    action: () => { }
+  });
+
+  const hideHighlight = () => setTimeout(() => setHighlightedId(null), 2000);
 
   // Fetch all tags
   const fetchTags = async () => {
@@ -31,7 +43,7 @@ const TagsManager: React.FC = () => {
       setTags(extendedTags);
       setError(null);
     } catch (err) {
-      
+
       setError("Failed to load tags. Please try again.");
     } finally {
       setLoading(false);
@@ -48,19 +60,35 @@ const TagsManager: React.FC = () => {
     e.preventDefault();
     if (!newTag.name.trim()) return;
 
-    try {
-      setLoading(true);
-      await api.post("/tags", newTag);
-      setNewTag({ name: "", description: "" });
-      await fetchTags();
-      setError(null);
-    } catch (err) {
-      
-      setError("Failed to create tag. Please try again.");
-    } finally {
-      setLoading(false);
-      setModalOpen(false);
-    }
+    setModalOpen(false);
+    setConfirmModal({
+      isOpen: true,
+      title: "Create Tag",
+      message: `Are you sure you want to create tag "${newTag.name}"?`,
+      type: "success",
+      confirmText: "Create",
+      action: async () => {
+        try {
+          setLoading(true);
+          const response = await api.post("/tags", newTag);
+          setNewTag({ name: "", description: "" });
+          await fetchTags();
+          if (response.data && response.data.data && response.data.data.id) {
+            setHighlightedId(response.data.data.id);
+            hideHighlight();
+          } else if (response.data && response.data.id) {
+            setHighlightedId(response.data.id);
+            hideHighlight();
+          }
+          setError(null);
+        } catch (err) {
+          setError("Failed to create tag. Please try again.");
+        } finally {
+          setLoading(false);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   // Update existing tag
@@ -68,36 +96,55 @@ const TagsManager: React.FC = () => {
     e.preventDefault();
     if (!editingTag?.name?.trim()) return;
 
-    try {
-      setLoading(true);
-      await api.put(`/tags/${editingTag.id}`, editingTag);
-      setEditingTag(null);
-      await fetchTags();
-      setError(null);
-    } catch (err) {
-      
-      setError("Failed to update tag. Please try again.");
-    } finally {
-      setLoading(false);
-      setModalOpen(false);
-    }
+    const tagId = editingTag.id;
+    setModalOpen(false);
+    setConfirmModal({
+      isOpen: true,
+      title: "Update Tag",
+      message: `Are you sure you want to update tag "${editingTag.name}"?`,
+      type: "primary",
+      confirmText: "Update",
+      action: async () => {
+        try {
+          setLoading(true);
+          await api.put(`/tags/${tagId}`, editingTag);
+          setEditingTag(null);
+          await fetchTags();
+          setHighlightedId(tagId);
+          hideHighlight();
+          setError(null);
+        } catch (err) {
+          setError("Failed to update tag. Please try again.");
+        } finally {
+          setLoading(false);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   // Delete a tag
-  const handleDeleteTag = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this tag?")) return;
-
-    try {
-      setLoading(true);
-      await api.delete(`/tags/${id}`);
-      await fetchTags();
-      setError(null);
-    } catch (err) {
-      
-      setError("Failed to delete tag. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteTag = (id: number, name: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Tag",
+      message: `Are you sure you want to delete tag "${name}"? This action cannot be undone.`,
+      type: "danger",
+      confirmText: "Delete",
+      action: async () => {
+        try {
+          setLoading(true);
+          await api.delete(`/tags/${id}`);
+          await fetchTags();
+          setError(null);
+        } catch (err) {
+          setError("Failed to delete tag. Please try again.");
+        } finally {
+          setLoading(false);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   // Open modal for editing
@@ -124,12 +171,12 @@ const TagsManager: React.FC = () => {
 
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 
-      {loading && !modalOpen ? (
+      {loading && !modalOpen && !confirmModal.isOpen ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
@@ -150,17 +197,20 @@ const TagsManager: React.FC = () => {
                 </tr>
               ) : (
                 tags.map((tag) => (
-                  <tr key={tag.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr
+                    key={tag.id}
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-500 ${highlightedId === tag.id ? 'bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500' : ''}`}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">{tag.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{tag.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{tag.slug}</td>
                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs truncate">{tag.description || "-"}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{new Date(tag.createdAt).toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button onClick={() => openEditModal(tag)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
+                      <button onClick={() => openEditModal(tag)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3 focus:outline-none">
                         Edit
                       </button>
-                      <button onClick={() => handleDeleteTag(tag.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                      <button onClick={() => handleDeleteTag(tag.id, tag.name)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 focus:outline-none">
                         Delete
                       </button>
                     </td>
@@ -221,6 +271,17 @@ const TagsManager: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Confirmation Modal */}
+      <ConfirmActionModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        actionType={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isLoading={loading}
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api";
 import { Category, getCategories, createCategory, updateCategory, deleteCategory } from "../services/content";
+import ConfirmActionModal from "../components/ConfirmActionModal";
 
 interface ExtendedCategory extends Category {
   description?: string;
@@ -16,19 +17,30 @@ const CategoriesManager: React.FC = () => {
   const [newCategory, setNewCategory] = useState({ name: "", description: "", parentId: null as number | null });
   const [editingCategory, setEditingCategory] = useState<ExtendedCategory | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "primary" as "primary" | "danger" | "success",
+    confirmText: "Confirm",
+    action: () => { }
+  });
+
+  const hideHighlight = () => setTimeout(() => setHighlightedId(null), 2000);
 
   // Fetch all categories
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      
+
       const response = await api.get("/categories");
-      
+
 
       // Check if the data has the expected structure
       const responseData = response.data;
       if (!responseData) {
-        
+
         setError("Invalid response format from server");
         return;
       }
@@ -40,12 +52,12 @@ const CategoriesManager: React.FC = () => {
       } else if (Array.isArray(responseData)) {
         categoriesData = responseData;
       } else {
-        
+
         setError("Unexpected data structure in response");
         return;
       }
 
-      
+
 
       // Ensure all categories have the necessary properties for ExtendedCategory
       const extendedCategories = categoriesData.map((cat: any) => ({
@@ -54,11 +66,11 @@ const CategoriesManager: React.FC = () => {
         updatedAt: cat.updatedAt || cat.updated_at || new Date().toISOString(),
       }));
 
-      
+
       setCategories(extendedCategories);
       setError(null);
     } catch (err: any) {
-      
+
       setError(`Failed to load categories: ${err.message || "Unknown error"}`);
     } finally {
       setLoading(false);
@@ -75,19 +87,32 @@ const CategoriesManager: React.FC = () => {
     e.preventDefault();
     if (!newCategory.name.trim()) return;
 
-    try {
-      setLoading(true);
-      await api.post("/categories", newCategory);
-      setNewCategory({ name: "", description: "", parentId: null });
-      await fetchCategories();
-      setError(null);
-    } catch (err) {
-      
-      setError("Failed to create category. Please try again.");
-    } finally {
-      setLoading(false);
-      setModalOpen(false);
-    }
+    setModalOpen(false);
+    setConfirmModal({
+      isOpen: true,
+      title: "Create Category",
+      message: `Are you sure you want to create category "${newCategory.name}"?`,
+      type: "success",
+      confirmText: "Create",
+      action: async () => {
+        try {
+          setLoading(true);
+          const response = await api.post("/categories", newCategory);
+          setNewCategory({ name: "", description: "", parentId: null });
+          await fetchCategories();
+          if (response.data && response.data.id) {
+            setHighlightedId(response.data.id);
+            hideHighlight();
+          }
+          setError(null);
+        } catch (err) {
+          setError("Failed to create category. Please try again.");
+        } finally {
+          setLoading(false);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   // Update existing category
@@ -95,36 +120,55 @@ const CategoriesManager: React.FC = () => {
     e.preventDefault();
     if (!editingCategory?.name?.trim()) return;
 
-    try {
-      setLoading(true);
-      await api.put(`/categories/${editingCategory.id}`, editingCategory);
-      setEditingCategory(null);
-      await fetchCategories();
-      setError(null);
-    } catch (err) {
-      
-      setError("Failed to update category. Please try again.");
-    } finally {
-      setLoading(false);
-      setModalOpen(false);
-    }
+    const catId = editingCategory.id;
+    setModalOpen(false);
+    setConfirmModal({
+      isOpen: true,
+      title: "Update Category",
+      message: `Are you sure you want to update category "${editingCategory.name}"?`,
+      type: "primary",
+      confirmText: "Update",
+      action: async () => {
+        try {
+          setLoading(true);
+          await api.put(`/categories/${catId}`, editingCategory);
+          setEditingCategory(null);
+          await fetchCategories();
+          setHighlightedId(catId);
+          hideHighlight();
+          setError(null);
+        } catch (err) {
+          setError("Failed to update category. Please try again.");
+        } finally {
+          setLoading(false);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   // Delete a category
-  const handleDeleteCategory = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this category?")) return;
-
-    try {
-      setLoading(true);
-      await api.delete(`/categories/${id}`);
-      await fetchCategories();
-      setError(null);
-    } catch (err) {
-      
-      setError("Failed to delete category. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteCategory = (id: number, name: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Category",
+      message: `Are you sure you want to delete category "${name}"? This action cannot be undone.`,
+      type: "danger",
+      confirmText: "Delete",
+      action: async () => {
+        try {
+          setLoading(true);
+          await api.delete(`/categories/${id}`);
+          await fetchCategories();
+          setError(null);
+        } catch (err) {
+          setError("Failed to delete category. Please try again.");
+        } finally {
+          setLoading(false);
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   // Open modal for editing
@@ -158,12 +202,12 @@ const CategoriesManager: React.FC = () => {
 
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 
-      {loading && !modalOpen ? (
+      {loading && !modalOpen && !confirmModal.isOpen ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
@@ -184,17 +228,20 @@ const CategoriesManager: React.FC = () => {
                 </tr>
               ) : (
                 categories.map((category) => (
-                  <tr key={category.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr
+                    key={category.id}
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-500 ${highlightedId === category.id ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500' : ''}`}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">{category.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{category.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{category.slug}</td>
                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs truncate">{category.description || "-"}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{getParentCategoryName(category.parentId)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button onClick={() => openEditModal(category)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
+                      <button onClick={() => openEditModal(category)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3 focus:outline-none">
                         Edit
                       </button>
-                      <button onClick={() => handleDeleteCategory(category.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                      <button onClick={() => handleDeleteCategory(category.id, category.name)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 focus:outline-none">
                         Delete
                       </button>
                     </td>
@@ -282,6 +329,17 @@ const CategoriesManager: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Confirmation Modal */}
+      <ConfirmActionModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        actionType={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isLoading={loading}
+      />
     </div>
   );
 };
