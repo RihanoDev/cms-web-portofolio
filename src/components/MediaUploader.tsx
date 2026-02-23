@@ -21,36 +21,38 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
   const [showDetails, setShowDetails] = useState(false);
 
   return (
-    <div className="relative group border border-slate-700 rounded-lg overflow-hidden bg-slate-800">
-      <img
-        src={url}
-        alt={altText || 'Preview'}
-        className="w-full h-48 object-cover"
-      />
+    <div className="border border-slate-700 rounded-lg overflow-hidden bg-slate-800">
+      <div className="relative group">
+        <img
+          src={url}
+          alt={altText || 'Preview'}
+          className="w-full h-48 object-cover"
+        />
 
-      {/* Hover overlay with actions */}
-      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-        <div className="flex justify-end">
-          <button
-            onClick={onRemove}
-            className="p-1 bg-red-500/80 hover:bg-red-500 rounded-full"
-            title="Remove image"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
+        {/* Hover overlay with actions */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
+          <div className="flex justify-end">
+            <button
+              onClick={onRemove}
+              className="p-1 bg-red-500/80 hover:bg-red-500 rounded-full"
+              title="Remove image"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
 
-        <div className="flex justify-center">
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="px-3 py-1 bg-slate-600/80 hover:bg-slate-600 rounded-lg text-xs"
-          >
-            {showDetails ? 'Hide Details' : 'Edit Details'}
-          </button>
+          <div className="flex justify-center">
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="px-3 py-1 bg-slate-600/80 hover:bg-slate-600 rounded-lg text-xs"
+            >
+              {showDetails ? 'Hide Details' : 'Edit Details'}
+            </button>
+          </div>
         </div>
-      </div>
+      </div> {/* This closes the 'relative group' div */}
 
       {/* Caption and alt text section */}
       {showDetails && (
@@ -120,12 +122,16 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
 
   const handleFileUpload = async (file: File) => {
     if (!file || !file.type.startsWith('image/')) {
-      setUploadError('Please select a valid image file (PNG, JPG, GIF, WebP)');
+      const msg = 'Please select a valid image file (PNG, JPG, GIF, WebP)';
+      setUploadError(msg);
+      alert(msg);
       return;
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      setUploadError('File size must be less than 50MB');
+      const msg = 'File size must be less than 50MB';
+      setUploadError(msg);
+      alert(msg);
       return;
     }
 
@@ -144,8 +150,9 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
 
       onAdd(newImage);
     } catch (error: any) {
-
-      setUploadError(error?.message || 'Failed to upload image. Please try again.');
+      const msg = error?.message || 'Failed to upload image. Please try again.';
+      setUploadError(msg);
+      alert(msg);
     } finally {
       setUploading(false);
     }

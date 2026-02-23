@@ -1,6 +1,7 @@
 import React from 'react'
 import { ContentStore, type Profile } from '../services/content'
 import { uploadMedia } from '../services/media'
+import ConfirmActionModal from '../components/ConfirmActionModal'
 
 // Card component for consistent UI
 const Card = ({ title, children }: { title: string, children: React.ReactNode }) => (
@@ -87,6 +88,16 @@ export default function ProfileEditor() {
   const [availableTags, setAvailableTags] = React.useState<string[]>([])
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
+  const [confirmModal, setConfirmModal] = React.useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "primary" as "primary" | "danger" | "success",
+    confirmText: "Confirm",
+    action: async () => { },
+    isLoading: false
+  })
+
   React.useEffect(() => {
     const fetchData = async () => {
       try {
@@ -155,26 +166,36 @@ export default function ProfileEditor() {
   }
 
   const save = async () => {
-    setSaving(true)
-    try {
-      const profile: Profile = {
-        name, title, title_id, bio, bio_id, avatarDataUrl: preview,
-        aboutSubtitle, aboutSubtitle_id, aboutDescription1, aboutDescription1_id,
-        aboutDescription2, aboutDescription2_id, aboutDescription3, aboutDescription3_id,
-        coreExpertise, skillCategories,
-        location, location_id,
-        email, email_id,
-        phone, phone_id
+    setConfirmModal({
+      isOpen: true,
+      title: "Save Profile",
+      message: "Are you sure you want to save the changes to your profile?",
+      type: "success",
+      confirmText: "Save",
+      isLoading: false,
+      action: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }))
+        try {
+          const profile: Profile = {
+            name, title, title_id, bio, bio_id, avatarDataUrl: preview,
+            aboutSubtitle, aboutSubtitle_id, aboutDescription1, aboutDescription1_id,
+            aboutDescription2, aboutDescription2_id, aboutDescription3, aboutDescription3_id,
+            coreExpertise, skillCategories,
+            location, location_id,
+            email, email_id,
+            phone, phone_id
+          }
+          await ContentStore.saveProfile(profile)
+          setSaved(true)
+          setTimeout(() => setSaved(false), 3000)
+        } catch (err) {
+          console.error(err)
+          alert("Failed to save profile. Please try again.")
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }))
+        }
       }
-      await ContentStore.saveProfile(profile)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    } catch (err) {
-
-      alert("Failed to save profile. Please try again.")
-    } finally {
-      setSaving(false)
-    }
+    })
   }
 
   // --- Button class based on save state ---
@@ -565,6 +586,16 @@ export default function ProfileEditor() {
           </div>
         </div>
       </div>
+      <ConfirmActionModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        actionType={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        onConfirm={confirmModal.action}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        isLoading={confirmModal.isLoading}
+      />
     </div>
   )
 }
